@@ -58,16 +58,29 @@ export function PhasesSection() {
                   const lt = state.teams.find((t) => t.id === m.leftTeamId);
                   const rt = state.teams.find((t) => t.id === m.rightTeamId);
                   if (!lt || !rt) return null;
+                  const scoreFor = (teamId: string) => {
+                    const ids = state.assignments[teamId] || [];
+                    let s = 0;
+                    for (const pid of ids) {
+                      const ev = m.events[pid];
+                      if (ev) s += ev.goals;
+                    }
+                    return s;
+                  };
+                  const ls = scoreFor(lt.id);
+                  const rs = scoreFor(rt.id);
                   return (
                     <Card key={m.id} className="overflow-hidden border-0 shadow-sm">
                       <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${lt.color}, ${rt.color})` }} />
                       <CardHeader>
-                        <CardTitle className="text-base">{lt.name} vs {rt.name}</CardTitle>
+                        <CardTitle className="text-base flex items-center justify-between gap-2">
+                          <span className="truncate" style={{ color: lt.color }}>{lt.name}</span>
+                          <span className="font-mono">{ls} x {rs}</span>
+                          <span className="truncate" style={{ color: rt.color }}>{rt.name}</span>
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent className="flex items-center justify-between">
-                        <Badge style={{ backgroundColor: lt.color, color: "#000" }}>Esq.</Badge>
+                      <CardContent className="flex items-center justify-center">
                         <Link to={`/jogo/${m.id}`} className="text-primary underline">Abrir jogo</Link>
-                        <Badge style={{ backgroundColor: rt.color, color: "#000" }}>Dir.</Badge>
                       </CardContent>
                     </Card>
                   );
