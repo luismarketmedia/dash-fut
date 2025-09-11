@@ -638,11 +638,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const ops: Promise<any>[] = [];
     for (const pid of Object.keys(match.events)) {
       ops.push(
-        supabase
-          .from("match_events")
-          .update({ destaque: false })
-          .eq("match_id", matchId)
-          .eq("player_id", pid),
+      supabase
+        .from("match_events")
+        .upsert(
+          {
+            match_id: matchId,
+            player_id: playerId,
+            goals: newEvents[playerId].goals,
+            yellow: newEvents[playerId].yellow,
+            red: newEvents[playerId].red,
+            destaque: willBe,
+          },
+          { onConflict: "match_id,player_id" },
+        )
+        .throwOnError() // garante que seja Promise
       );
     }
     ops.push(
