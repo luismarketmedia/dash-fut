@@ -95,7 +95,7 @@ export default function Match() {
 }
 
 function TeamColumn({ title, color, players, matchId, update }: { title: string; color: string; players: any[]; matchId: string; update: (pid: string, fn: any) => void }) {
-  const { state } = useApp();
+  const { state, dispatch, setUniqueDestaque } = useApp();
   const events = state.matches.find((m) => m.id === matchId)?.events || {};
   return (
     <Card className="overflow-hidden border-0 shadow-sm">
@@ -116,25 +116,39 @@ function TeamColumn({ title, color, players, matchId, update }: { title: string;
             return (
               <div key={p.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded bg-muted text-xs font-semibold">{p.jerseyNumber}</span>
+                  <Input
+                    type="number"
+                    className="h-8 w-16 text-center"
+                    value={p.jerseyNumber}
+                    onChange={(e) =>
+                      dispatch({ type: "UPDATE_PLAYER", payload: { ...p, jerseyNumber: parseInt(e.target.value || "0") } })
+                    }
+                  />
                   <div>
-                    <div className="font-medium leading-4">
-                      {p.name}
-                      {s.destaque && <Badge className="ml-2 bg-amber-400 hover:bg-amber-400 text-black">Destaque</Badge>}
+                    <div className="font-medium leading-4 flex items-center gap-2">
+                      <span>{p.name}</span>
+                      {s.destaque && <Star className="h-4 w-4 text-amber-400" />}
                     </div>
                     <div className="text-xs text-muted-foreground">{p.position}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Gols: {s.goals}</Badge>
-                  <Badge className="bg-yellow-400 hover:bg-yellow-400 text-black">{s.yellow}</Badge>
-                  <Badge variant={s.red ? "destructive" : "outline"}>{s.red ? "Verm" : "OK"}</Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant={"outline"} onClick={() => update(p.id, (prev: any) => ({ ...prev, destaque: !prev.destaque }))}>Destaque</Button>
-                  <Button size="sm" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: prev.goals + 1 }))}>Gol +1</Button>
-                  <Button size="sm" variant="secondary" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: Math.min(2, prev.yellow + 1) }))}>Amarelo</Button>
-                  <Button size="sm" variant="destructive" onClick={() => update(p.id, (prev: any) => ({ ...prev, red: !prev.red }))}>Vermelho</Button>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: Math.max(0, prev.goals - 1) }))}><Minus className="h-4 w-4" /></Button>
+                    <Badge variant="secondary" className="gap-1"><CircleDotIcon />{s.goals}</Badge>
+                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: prev.goals + 1 }))}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: Math.max(0, prev.yellow - 1) }))}><Minus className="h-4 w-4" /></Button>
+                    <Badge className="gap-1 bg-yellow-400 hover:bg-yellow-400 text-black"><Square className="h-3 w-3 fill-yellow-400 text-yellow-400" />{s.yellow}</Badge>
+                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: prev.yellow + 1 }))}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <Button size="sm" variant={s.red ? "destructive" : "outline"} onClick={() => update(p.id, (prev: any) => ({ ...prev, red: !prev.red }))}>
+                    <Square className={s.red ? "h-4 w-4 fill-red-500 text-red-500" : "h-4 w-4"} />
+                  </Button>
+                  <Button size="sm" variant={"outline"} onClick={() => setUniqueDestaque(matchId, p.id)}>
+                    <Star className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             );
@@ -143,4 +157,8 @@ function TeamColumn({ title, color, players, matchId, update }: { title: string;
       </CardContent>
     </Card>
   );
+}
+
+function CircleDotIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>;
 }
