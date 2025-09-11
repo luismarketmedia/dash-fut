@@ -299,6 +299,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: "UPDATE_MATCH", payload: updated });
   };
 
+  const setUniqueDestaque = (matchId: string, playerId: string) => {
+    const match = state.matches.find((m) => m.id === matchId);
+    if (!match) return;
+    const current = match.events[playerId] || { goals: 0, yellow: 0, red: false, destaque: false };
+    const willBe = !current.destaque;
+    const newEvents: Record<string, PlayerStats> = {};
+    // turn off all
+    for (const [pid, stats] of Object.entries(match.events)) {
+      newEvents[pid] = { ...stats, destaque: false };
+    }
+    newEvents[playerId] = { ...current, destaque: willBe };
+    const updated: Match = { ...match, events: newEvents };
+    dispatch({ type: "UPDATE_MATCH", payload: updated });
+  };
+
   const startPauseTimer = (matchId: string) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
@@ -334,7 +349,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const value = useMemo(
-    () => ({ state, dispatch, drawTeams, generateMatches, updatePlayerStat, startPauseTimer, resetTimer, nextHalf }),
+    () => ({ state, dispatch, drawTeams, generateMatches, updatePlayerStat, setUniqueDestaque, startPauseTimer, resetTimer, nextHalf }),
     [state],
   );
 
