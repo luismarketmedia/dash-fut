@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2 } from "lucide-react";
+import { StandingsSection } from "./Standings";
 
 function ColorPreview({ color }: { color: string }) {
   return <span className="inline-block h-4 w-4 rounded" style={{ backgroundColor: color }} />;
