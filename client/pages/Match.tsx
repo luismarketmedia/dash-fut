@@ -36,6 +36,16 @@ export default function Match() {
     );
   }
 
+  const score = (teamId: string) => {
+    const ids = state.assignments[teamId] || [];
+    let s = 0;
+    for (const pid of ids) {
+      const ev = match.events[pid];
+      if (ev) s += ev.goals;
+    }
+    return s;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card/70 backdrop-blur">
@@ -45,12 +55,19 @@ export default function Match() {
             <Separator orientation="vertical" className="h-5" />
             <span className="text-sm">{match.phase}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary">{match.half}º tempo</Badge>
-            <div className="font-mono text-2xl tabular-nums">{msToClock(match.remainingMs)}</div>
-            <Button size="sm" onClick={() => startPauseTimer(match.id)}>{match.startedAt ? "Pausar" : "Iniciar"}</Button>
-            <Button size="sm" variant="outline" onClick={() => resetTimer(match.id)}>Resetar</Button>
-            <Button size="sm" variant="secondary" onClick={() => nextHalf(match.id)}>Próximo tempo</Button>
+          <div className="flex items-center gap-6">
+            <div className="hidden items-center gap-2 md:flex">
+              <span className="font-medium" style={{ color: leftTeam.color }}>{leftTeam.name}</span>
+              <span className="font-mono text-xl">{score(leftTeam.id)} - {score(rightTeam.id)}</span>
+              <span className="font-medium" style={{ color: rightTeam.color }}>{rightTeam.name}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary">{match.half}º tempo</Badge>
+              <div className="font-mono text-2xl tabular-nums">{msToClock(match.remainingMs)}</div>
+              <Button size="sm" onClick={() => startPauseTimer(match.id)}>{match.startedAt ? "Pausar" : "Iniciar"}</Button>
+              <Button size="sm" variant="outline" onClick={() => resetTimer(match.id)}>Resetar</Button>
+              <Button size="sm" variant="secondary" onClick={() => nextHalf(match.id)}>Próximo tempo</Button>
+            </div>
           </div>
         </div>
       </div>
