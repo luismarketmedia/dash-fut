@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer } from "react";
-import { nanoid } from "nanoid";
 
 export type Position =
   | "GOL"
