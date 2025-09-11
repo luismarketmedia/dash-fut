@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { PhasesSection } from "@/components/dashboard/Phases";
+import { TopScorersSection } from "@/components/dashboard/TopScorers";
 
 export default function PhasesPage() {
   return (
@@ -9,6 +10,7 @@ export default function PhasesPage() {
         <p className="text-muted-foreground">Sorteie confrontos por fase entre os times.</p>
       </div>
       <PhasesSection />
+      <TopScorersSection />
     </DashboardLayout>
   );
 }
