@@ -1,3 +1,4 @@
+"use client";
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { PlayersSection } from "@/components/dashboard/Players";
 
