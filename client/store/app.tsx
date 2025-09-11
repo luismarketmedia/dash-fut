@@ -101,7 +101,7 @@ type Action =
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "ADD_PLAYER": {
-      const newPlayer: Player = { id: nanoid(), ...action.payload };
+      const newPlayer: Player = { id: crypto.randomUUID(), ...action.payload };
       const next = { ...state, players: [...state.players, newPlayer] };
       return next;
     }
@@ -128,7 +128,7 @@ function reducer(state: State, action: Action): State {
       return next;
     }
     case "ADD_TEAM": {
-      const newTeam: Team = { id: nanoid(), ...action.payload };
+      const newTeam: Team = { id: crypto.randomUUID(), ...action.payload };
       const next = {
         ...state,
         teams: [...state.teams, newTeam],
@@ -273,7 +273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     // If odd, last team has a bye (ignored)
     const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
-      id: nanoid(),
+      id: crypto.randomUUID(),
       leftTeamId,
       rightTeamId,
       phase,
