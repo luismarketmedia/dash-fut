@@ -28,6 +28,7 @@ export function TeamsSection() {
           <TeamCards />
         </div>
       </div>
+      <StandingsSection />
     </section>
   );
 }
