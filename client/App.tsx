@@ -7,6 +7,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import PlayersPage from "./pages/PlayersPage";
+import TeamsPage from "./pages/TeamsPage";
+import DrawPage from "./pages/DrawPage";
+import PhasesPage from "./pages/PhasesPage";
 import Match from "./pages/Match";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +27,10 @@ const App = () => (
         <AppProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/jogadores" element={<PlayersPage />} />
+            <Route path="/times" element={<TeamsPage />} />
+            <Route path="/sorteio" element={<DrawPage />} />
+            <Route path="/fases" element={<PhasesPage />} />
             <Route path="/jogo/:matchId" element={<Match />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

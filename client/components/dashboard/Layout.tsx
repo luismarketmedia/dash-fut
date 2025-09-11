@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { NavLink } from "react-router-dom";
 
 export function DashboardLayout({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -12,11 +13,11 @@ export function DashboardLayout({ children, className }: { children: ReactNode; 
               "conic-gradient(from 45deg, hsl(var(--primary)), hsl(var(--accent)))" }} />
             <div className="text-lg font-semibold tracking-tight">Futebol Dashboard</div>
           </div>
-          <nav className="hidden gap-2 sm:flex">
-            <a href="#jogadores" className="text-sm text-muted-foreground hover:text-foreground">Jogadores</a>
-            <a href="#times" className="text-sm text-muted-foreground hover:text-foreground">Times</a>
-            <a href="#sorteio" className="text-sm text-muted-foreground hover:text-foreground">Sorteio</a>
-            <a href="#fases" className="text-sm text-muted-foreground hover:text-foreground">Fases</a>
+          <nav className="hidden gap-3 sm:flex">
+            <NavLink to="/jogadores" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Jogadores</NavLink>
+            <NavLink to="/times" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Times</NavLink>
+            <NavLink to="/sorteio" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Sorteio</NavLink>
+            <NavLink to="/fases" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Fases</NavLink>
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Topo</Button>
