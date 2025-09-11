@@ -184,6 +184,7 @@ const AppContext = createContext<{
     playerId: string,
     updater: (prev: PlayerStats) => PlayerStats,
   ) => void;
+  setUniqueDestaque: (matchId: string, playerId: string) => void;
   startPauseTimer: (matchId: string) => void;
   resetTimer: (matchId: string) => void;
   nextHalf: (matchId: string) => void;
