@@ -3,32 +3,89 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "react-router-dom";
 
-export function DashboardLayout({ children, className }: { children: ReactNode; className?: string }) {
+export function DashboardLayout({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={cn("min-h-screen bg-background text-foreground", className)}>
+    <div
+      className={cn("min-h-screen bg-background text-foreground", className)}
+    >
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md" style={{ background:
-              "conic-gradient(from 45deg, hsl(var(--primary)), hsl(var(--accent)))" }} />
-            <div className="text-lg font-semibold tracking-tight">Futebol Dashboard</div>
+            <span
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md"
+              style={{
+                background:
+                  "conic-gradient(from 45deg, hsl(var(--primary)), hsl(var(--accent)))",
+              }}
+            />
+            <div className="text-lg font-semibold tracking-tight">
+              Futebol Dashboard
+            </div>
           </div>
           <nav className="hidden gap-3 sm:flex">
-            <NavLink to="/jogadores" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Jogadores</NavLink>
-            <NavLink to="/times" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Times</NavLink>
-            <NavLink to="/sorteio" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Sorteio</NavLink>
-            <NavLink to="/fases" className={({isActive}) => isActive ? "text-sm font-medium" : "text-sm text-muted-foreground hover:text-foreground"}>Fases</NavLink>
+            <NavLink
+              to="/jogadores"
+              className={({ isActive }) =>
+                isActive
+                  ? "text-sm font-medium"
+                  : "text-sm text-muted-foreground hover:text-foreground"
+              }
+            >
+              Jogadores
+            </NavLink>
+            <NavLink
+              to="/times"
+              className={({ isActive }) =>
+                isActive
+                  ? "text-sm font-medium"
+                  : "text-sm text-muted-foreground hover:text-foreground"
+              }
+            >
+              Times
+            </NavLink>
+            <NavLink
+              to="/sorteio"
+              className={({ isActive }) =>
+                isActive
+                  ? "text-sm font-medium"
+                  : "text-sm text-muted-foreground hover:text-foreground"
+              }
+            >
+              Sorteio
+            </NavLink>
+            <NavLink
+              to="/fases"
+              className={({ isActive }) =>
+                isActive
+                  ? "text-sm font-medium"
+                  : "text-sm text-muted-foreground hover:text-foreground"
+              }
+            >
+              Fases
+            </NavLink>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Topo</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              Topo
+            </Button>
           </div>
         </div>
       </header>
-      <main className="container py-8">
-        {children}
-      </main>
+      <main className="container py-8">{children}</main>
       <footer className="border-t py-6">
-        <div className="container text-center text-xs text-muted-foreground">Organize seus jogos com facilidade</div>
+        <div className="container text-center text-xs text-muted-foreground">
+          Organize seus jogos com facilidade
+        </div>
       </footer>
     </div>
   );

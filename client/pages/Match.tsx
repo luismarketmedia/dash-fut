@@ -19,19 +19,47 @@ function msToClock(ms: number) {
 
 export default function Match() {
   const { matchId } = useParams();
-  const { state, updatePlayerStat, startPauseTimer, resetTimer, nextHalf } = useApp();
+  const { state, updatePlayerStat, startPauseTimer, resetTimer, nextHalf } =
+    useApp();
   const match = state.matches.find((m) => m.id === matchId);
 
-  const leftTeam = useMemo(() => state.teams.find((t) => t.id === match?.leftTeamId), [state.teams, match]);
-  const rightTeam = useMemo(() => state.teams.find((t) => t.id === match?.rightTeamId), [state.teams, match]);
+  const leftTeam = useMemo(
+    () => state.teams.find((t) => t.id === match?.leftTeamId),
+    [state.teams, match],
+  );
+  const rightTeam = useMemo(
+    () => state.teams.find((t) => t.id === match?.rightTeamId),
+    [state.teams, match],
+  );
 
-  const leftPlayers = useMemo(() => (match && leftTeam ? (state.assignments[leftTeam.id] || []).map((pid) => state.players.find((p) => p.id === pid)).filter(Boolean) : []), [match, leftTeam, state.assignments, state.players]) as NonNullable<ReturnType<typeof Array.prototype.map>>;
-  const rightPlayers = useMemo(() => (match && rightTeam ? (state.assignments[rightTeam.id] || []).map((pid) => state.players.find((p) => p.id === pid)).filter(Boolean) : []), [match, rightTeam, state.assignments, state.players]) as NonNullable<ReturnType<typeof Array.prototype.map>>;
+  const leftPlayers = useMemo(
+    () =>
+      match && leftTeam
+        ? (state.assignments[leftTeam.id] || [])
+            .map((pid) => state.players.find((p) => p.id === pid))
+            .filter(Boolean)
+        : [],
+    [match, leftTeam, state.assignments, state.players],
+  ) as NonNullable<ReturnType<typeof Array.prototype.map>>;
+  const rightPlayers = useMemo(
+    () =>
+      match && rightTeam
+        ? (state.assignments[rightTeam.id] || [])
+            .map((pid) => state.players.find((p) => p.id === pid))
+            .filter(Boolean)
+        : [],
+    [match, rightTeam, state.assignments, state.players],
+  ) as NonNullable<ReturnType<typeof Array.prototype.map>>;
 
   if (!match || !leftTeam || !rightTeam) {
     return (
       <div className="container py-10">
-        <div className="rounded-lg border bg-card p-6 text-center">Jogo não encontrado. <Link to="/" className="text-primary underline">Voltar</Link></div>
+        <div className="rounded-lg border bg-card p-6 text-center">
+          Jogo não encontrado.{" "}
+          <Link to="/" className="text-primary underline">
+            Voltar
+          </Link>
+        </div>
       </div>
     );
   }
@@ -51,22 +79,49 @@ export default function Match() {
       <div className="border-b bg-card/70 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Voltar</Link>
+            <Link
+              to="/"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Voltar
+            </Link>
             <Separator orientation="vertical" className="h-5" />
             <span className="text-sm">{match.phase}</span>
           </div>
           <div className="flex items-center gap-6">
             <div className="hidden items-center gap-2 md:flex">
-              <span className="font-medium" style={{ color: leftTeam.color }}>{leftTeam.name}</span>
-              <span className="font-mono text-xl">{score(leftTeam.id)} - {score(rightTeam.id)}</span>
-              <span className="font-medium" style={{ color: rightTeam.color }}>{rightTeam.name}</span>
+              <span className="font-medium" style={{ color: leftTeam.color }}>
+                {leftTeam.name}
+              </span>
+              <span className="font-mono text-xl">
+                {score(leftTeam.id)} - {score(rightTeam.id)}
+              </span>
+              <span className="font-medium" style={{ color: rightTeam.color }}>
+                {rightTeam.name}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Badge variant="secondary">{match.half}º tempo</Badge>
-              <div className="font-mono text-2xl tabular-nums">{msToClock(match.remainingMs)}</div>
-              <Button size="sm" onClick={() => startPauseTimer(match.id)}>{match.startedAt ? "Pausar" : "Iniciar"}</Button>
-              <Button size="sm" variant="outline" onClick={() => resetTimer(match.id)}>Resetar</Button>
-              <Button size="sm" variant="secondary" onClick={() => nextHalf(match.id)}>Próximo tempo</Button>
+              <div className="font-mono text-2xl tabular-nums">
+                {msToClock(match.remainingMs)}
+              </div>
+              <Button size="sm" onClick={() => startPauseTimer(match.id)}>
+                {match.startedAt ? "Pausar" : "Iniciar"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => resetTimer(match.id)}
+              >
+                Resetar
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => nextHalf(match.id)}
+              >
+                Próximo tempo
+              </Button>
             </div>
           </div>
         </div>
@@ -94,7 +149,19 @@ export default function Match() {
   );
 }
 
-function TeamColumn({ title, color, players, matchId, update }: { title: string; color: string; players: any[]; matchId: string; update: (pid: string, fn: any) => void }) {
+function TeamColumn({
+  title,
+  color,
+  players,
+  matchId,
+  update,
+}: {
+  title: string;
+  color: string;
+  players: any[];
+  matchId: string;
+  update: (pid: string, fn: any) => void;
+}) {
   const { state, dispatch, setUniqueDestaque } = useApp();
   const events = state.matches.find((m) => m.id === matchId)?.events || {};
   return (
@@ -109,44 +176,128 @@ function TeamColumn({ title, color, players, matchId, update }: { title: string;
       <CardContent>
         <div className="space-y-3">
           {players.length === 0 && (
-            <div className="rounded-md border p-4 text-sm text-muted-foreground">Sem escalação para este time. Faça o sorteio.</div>
+            <div className="rounded-md border p-4 text-sm text-muted-foreground">
+              Sem escalação para este time. Faça o sorteio.
+            </div>
           )}
           {players.map((p: any) => {
-            const s = events[p.id] || { goals: 0, yellow: 0, red: false, destaque: false };
+            const s = events[p.id] || {
+              goals: 0,
+              yellow: 0,
+              red: false,
+              destaque: false,
+            };
             return (
-              <div key={p.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-3 rounded-md border p-3"
+              >
                 <div className="flex items-center gap-3">
                   <Input
                     type="number"
                     className="h-8 w-16 text-center"
                     value={p.jerseyNumber}
                     onChange={(e) =>
-                      dispatch({ type: "UPDATE_PLAYER", payload: { ...p, jerseyNumber: parseInt(e.target.value || "0") } })
+                      dispatch({
+                        type: "UPDATE_PLAYER",
+                        payload: {
+                          ...p,
+                          jerseyNumber: parseInt(e.target.value || "0"),
+                        },
+                      })
                     }
                   />
                   <div>
                     <div className="font-medium leading-4 flex items-center gap-2">
                       <span>{p.name}</span>
-                      {s.destaque && <Star className="h-4 w-4 text-amber-400" />}
+                      {s.destaque && (
+                        <Star className="h-4 w-4 text-amber-400" />
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground">{p.position}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {p.position}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: Math.max(0, prev.goals - 1) }))}><Minus className="h-4 w-4" /></Button>
-                    <Badge variant="secondary" className="gap-1"><CircleDotIcon />{s.goals}</Badge>
-                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: prev.goals + 1 }))}><Plus className="h-4 w-4" /></Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        update(p.id, (prev: any) => ({
+                          ...prev,
+                          goals: Math.max(0, prev.goals - 1),
+                        }))
+                      }
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Badge variant="secondary" className="gap-1">
+                      <CircleDotIcon />
+                      {s.goals}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        update(p.id, (prev: any) => ({
+                          ...prev,
+                          goals: prev.goals + 1,
+                        }))
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: Math.max(0, prev.yellow - 1) }))}><Minus className="h-4 w-4" /></Button>
-                    <Badge className="gap-1 bg-yellow-400 hover:bg-yellow-400 text-black"><Square className="h-3 w-3 fill-yellow-400 text-yellow-400" />{s.yellow}</Badge>
-                    <Button size="icon" variant="ghost" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: prev.yellow + 1 }))}><Plus className="h-4 w-4" /></Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        update(p.id, (prev: any) => ({
+                          ...prev,
+                          yellow: Math.max(0, prev.yellow - 1),
+                        }))
+                      }
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Badge className="gap-1 bg-yellow-400 hover:bg-yellow-400 text-black">
+                      <Square className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      {s.yellow}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        update(p.id, (prev: any) => ({
+                          ...prev,
+                          yellow: prev.yellow + 1,
+                        }))
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button size="sm" variant={s.red ? "destructive" : "outline"} onClick={() => update(p.id, (prev: any) => ({ ...prev, red: !prev.red }))}>
-                    <Square className={s.red ? "h-4 w-4 fill-red-500 text-red-500" : "h-4 w-4"} />
+                  <Button
+                    size="sm"
+                    variant={s.red ? "destructive" : "outline"}
+                    onClick={() =>
+                      update(p.id, (prev: any) => ({ ...prev, red: !prev.red }))
+                    }
+                  >
+                    <Square
+                      className={
+                        s.red ? "h-4 w-4 fill-red-500 text-red-500" : "h-4 w-4"
+                      }
+                    />
                   </Button>
-                  <Button size="sm" variant={"outline"} onClick={() => setUniqueDestaque(matchId, p.id)}>
+                  <Button
+                    size="sm"
+                    variant={"outline"}
+                    onClick={() => setUniqueDestaque(matchId, p.id)}
+                  >
                     <Star className="h-4 w-4" />
                   </Button>
                 </div>
@@ -160,5 +311,16 @@ function TeamColumn({ title, color, players, matchId, update }: { title: string;
 }
 
 function CircleDotIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>;
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+    </svg>
+  );
 }

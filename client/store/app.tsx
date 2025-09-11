@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useReducer } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+} from "react";
 
 export type Position =
   | "GOL"
@@ -23,7 +29,12 @@ export interface Team {
   capacity: number; // desired number of players
 }
 
-export type Phase = "Classificação" | "Oitavas" | "Quartas" | "Semifinal" | "Final";
+export type Phase =
+  | "Classificação"
+  | "Oitavas"
+  | "Quartas"
+  | "Semifinal"
+  | "Final";
 
 export interface PlayerStats {
   goals: number;
@@ -70,7 +81,12 @@ function loadState(): State {
     if (!raw) return initialState;
     const parsed = JSON.parse(raw) as State;
     // Basic validation
-    if (!parsed.players || !parsed.teams || !parsed.matches || !parsed.assignments) {
+    if (
+      !parsed.players ||
+      !parsed.teams ||
+      !parsed.matches ||
+      !parsed.assignments
+    ) {
       return initialState;
     }
     return parsed;
@@ -108,7 +124,9 @@ function reducer(state: State, action: Action): State {
     case "UPDATE_PLAYER": {
       const next = {
         ...state,
-        players: state.players.map((p) => (p.id === action.payload.id ? action.payload : p)),
+        players: state.players.map((p) =>
+          p.id === action.payload.id ? action.payload : p,
+        ),
       };
       return next;
     }
@@ -139,7 +157,9 @@ function reducer(state: State, action: Action): State {
     case "UPDATE_TEAM": {
       const next = {
         ...state,
-        teams: state.teams.map((t) => (t.id === action.payload.id ? action.payload : t)),
+        teams: state.teams.map((t) =>
+          t.id === action.payload.id ? action.payload : t,
+        ),
       };
       return next;
     }
@@ -161,11 +181,16 @@ function reducer(state: State, action: Action): State {
     case "UPDATE_MATCH": {
       return {
         ...state,
-        matches: state.matches.map((m) => (m.id === action.payload.id ? action.payload : m)),
+        matches: state.matches.map((m) =>
+          m.id === action.payload.id ? action.payload : m,
+        ),
       };
     }
     case "DELETE_MATCH": {
-      return { ...state, matches: state.matches.filter((m) => m.id !== action.payload.id) };
+      return {
+        ...state,
+        matches: state.matches.filter((m) => m.id !== action.payload.id),
+      };
     }
     case "RESET_ALL":
       return initialState;
@@ -190,8 +215,14 @@ const AppContext = createContext<{
   nextHalf: (matchId: string) => void;
 } | null>(null);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(reducer, undefined as unknown as State, () => loadState());
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [state, dispatch] = useReducer(
+    reducer,
+    undefined as unknown as State,
+    () => loadState(),
+  );
 
   useEffect(() => {
     saveState(state);
@@ -207,7 +238,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       running.forEach((m) => {
         const elapsed = now - (m.startedAt || 0);
         const newRemaining = Math.max(0, m.remainingMs - elapsed);
-        const updated: Match = { ...m, remainingMs: newRemaining, startedAt: now };
+        const updated: Match = {
+          ...m,
+          remainingMs: newRemaining,
+          startedAt: now,
+        };
         if (newRemaining === 0) {
           updated.startedAt = null;
         }
@@ -227,7 +262,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const others = players.filter((p) => p.position !== "GOL");
 
     // Initialize assignment arrays
-    const result: Assignments = Object.fromEntries(teams.map((t) => [t.id, [] as string[]]));
+    const result: Assignments = Object.fromEntries(
+      teams.map((t) => [t.id, [] as string[]]),
+    );
 
     // Step 1: one GK per team if available
     const shuffledGk = shuffle(gks);
@@ -293,16 +330,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
-    const prev = match.events[playerId] || { goals: 0, yellow: 0, red: false, destaque: false };
+    const prev = match.events[playerId] || {
+      goals: 0,
+      yellow: 0,
+      red: false,
+      destaque: false,
+    };
     const nextStats = updater(prev);
-    const updated: Match = { ...match, events: { ...match.events, [playerId]: nextStats } };
+    const updated: Match = {
+      ...match,
+      events: { ...match.events, [playerId]: nextStats },
+    };
     dispatch({ type: "UPDATE_MATCH", payload: updated });
   };
 
   const setUniqueDestaque = (matchId: string, playerId: string) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
-    const current = match.events[playerId] || { goals: 0, yellow: 0, red: false, destaque: false };
+    const current = match.events[playerId] || {
+      goals: 0,
+      yellow: 0,
+      red: false,
+      destaque: false,
+    };
     const willBe = !current.destaque;
     const newEvents: Record<string, PlayerStats> = {};
     // turn off all
@@ -349,7 +399,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const value = useMemo(
-    () => ({ state, dispatch, drawTeams, generateMatches, updatePlayerStat, setUniqueDestaque, startPauseTimer, resetTimer, nextHalf }),
+    () => ({
+      state,
+      dispatch,
+      drawTeams,
+      generateMatches,
+      updatePlayerStat,
+      setUniqueDestaque,
+      startPauseTimer,
+      resetTimer,
+      nextHalf,
+    }),
     [state],
   );
 
