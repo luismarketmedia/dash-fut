@@ -1,3 +1,4 @@
+"use client";
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { useApp } from "@/store/app";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
