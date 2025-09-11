@@ -5,12 +5,6 @@ import { TeamsSection } from "@/components/dashboard/Teams";
 export default function TimesPage() {
   return (
     <DashboardLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Cadastro de Times</h1>
-        <p className="text-muted-foreground">
-          Crie times, defina cor e capacidade.
-        </p>
-      </div>
       <TeamsSection />
     </DashboardLayout>
   );
