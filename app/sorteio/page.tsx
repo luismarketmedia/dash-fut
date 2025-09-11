@@ -1,7 +1,8 @@
+"use client";
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { DrawSection } from "@/components/dashboard/Draw";
 
-export default function DrawPage() {
+export default function SorteioPage() {
   return (
     <DashboardLayout>
       <div className="mb-8">

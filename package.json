@@ -11,18 +11,18 @@
     ]
   },
   "scripts": {
-    "dev": "vite",
-    "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build",
-    "build:server": "vite build --config vite.config.server.ts",
-    "start": "node dist/server/node-build.mjs",
+    "dev": "next dev -p 8080",
+    "build": "next build",
+    "start": "next start -p 8080",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "next": "^14.2.15",
     "zod": "^3.25.76"
   },
   "devDependencies": {

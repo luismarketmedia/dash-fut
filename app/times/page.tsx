@@ -1,7 +1,8 @@
+"use client";
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { TeamsSection } from "@/components/dashboard/Teams";
 
-export default function TeamsPage() {
+export default function TimesPage() {
   return (
     <DashboardLayout>
       <div className="mb-8">

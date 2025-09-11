@@ -1,10 +1,11 @@
+"use client";
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { useApp } from "@/store/app";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
-export default function Index() {
+export default function Page() {
   const { state } = useApp();
   return (
     <DashboardLayout>
@@ -59,7 +60,7 @@ function HomeTile({
   subtitle: string;
 }) {
   return (
-    <Link to={to} className="block">
+    <Link href={to} className="block">
       <Card className="transition-shadow hover:shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

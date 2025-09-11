@@ -1,5 +1,8 @@
+"use client";
+
 import { useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useApp } from "@/store/app";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +20,9 @@ function msToClock(ms: number) {
   return `${m}:${s}`;
 }
 
-export default function Match() {
-  const { matchId } = useParams();
+export default function MatchPage() {
+  const params = useParams<{ matchId: string }>();
+  const matchId = params.matchId;
   const { state, updatePlayerStat, startPauseTimer, resetTimer, nextHalf } =
     useApp();
   const match = state.matches.find((m) => m.id === matchId);
@@ -40,7 +44,7 @@ export default function Match() {
             .filter(Boolean)
         : [],
     [match, leftTeam, state.assignments, state.players],
-  ) as NonNullable<ReturnType<typeof Array.prototype.map>>;
+  ) as any[];
   const rightPlayers = useMemo(
     () =>
       match && rightTeam
@@ -49,14 +53,14 @@ export default function Match() {
             .filter(Boolean)
         : [],
     [match, rightTeam, state.assignments, state.players],
-  ) as NonNullable<ReturnType<typeof Array.prototype.map>>;
+  ) as any[];
 
   if (!match || !leftTeam || !rightTeam) {
     return (
       <div className="container py-10">
         <div className="rounded-lg border bg-card p-6 text-center">
           Jogo não encontrado.{" "}
-          <Link to="/" className="text-primary underline">
+          <Link href="/" className="text-primary underline">
             Voltar
           </Link>
         </div>
@@ -80,7 +84,7 @@ export default function Match() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              to="/"
+              href="/"
               className="text-sm text-muted-foreground hover:text-foreground"
             >
               ← Voltar
@@ -132,14 +136,14 @@ export default function Match() {
           <TeamColumn
             title={`${leftTeam.name}`}
             color={leftTeam.color}
-            players={leftPlayers as any}
+            players={leftPlayers}
             matchId={match.id}
             update={(pid, fn) => updatePlayerStat(match.id, pid, fn)}
           />
           <TeamColumn
             title={`${rightTeam.name}`}
             color={rightTeam.color}
-            players={rightPlayers as any}
+            players={rightPlayers}
             matchId={match.id}
             update={(pid, fn) => updatePlayerStat(match.id, pid, fn)}
           />
@@ -177,11 +181,11 @@ function TeamColumn({
         <div className="space-y-3">
           {players.length === 0 && (
             <div className="rounded-md border p-4 text-sm text-muted-foreground">
-              Sem escalação para este time. Faça o sorteio.
+              Sem escalação para este time. Fa��a o sorteio.
             </div>
           )}
           {players.map((p: any) => {
-            const s = events[p.id] || {
+            const s = (events as any)[p.id] || {
               goals: 0,
               yellow: 0,
               red: false,

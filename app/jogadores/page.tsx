@@ -1,7 +1,8 @@
+"use client";
 import { DashboardLayout } from "@/components/dashboard/Layout";
 import { PlayersSection } from "@/components/dashboard/Players";
 
-export default function PlayersPage() {
+export default function JogadoresPage() {
   return (
     <DashboardLayout>
       <div className="mb-8">

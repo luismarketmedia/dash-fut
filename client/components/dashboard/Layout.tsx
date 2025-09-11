@@ -1,7 +1,10 @@
 import { ReactNode } from "react";
+("use client");
+import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { NavLink } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function DashboardLayout({
   children,
@@ -10,6 +13,11 @@ export function DashboardLayout({
   children: ReactNode;
   className?: string;
 }) {
+  const pathname = usePathname();
+  const linkClass = (href: string) =>
+    pathname === href
+      ? "text-sm font-medium"
+      : "text-sm text-muted-foreground hover:text-foreground";
   return (
     <div
       className={cn("min-h-screen bg-background text-foreground", className)}
@@ -29,46 +37,18 @@ export function DashboardLayout({
             </div>
           </div>
           <nav className="hidden gap-3 sm:flex">
-            <NavLink
-              to="/jogadores"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-sm font-medium"
-                  : "text-sm text-muted-foreground hover:text-foreground"
-              }
-            >
+            <Link href="/jogadores" className={linkClass("/jogadores")}>
               Jogadores
-            </NavLink>
-            <NavLink
-              to="/times"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-sm font-medium"
-                  : "text-sm text-muted-foreground hover:text-foreground"
-              }
-            >
+            </Link>
+            <Link href="/times" className={linkClass("/times")}>
               Times
-            </NavLink>
-            <NavLink
-              to="/sorteio"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-sm font-medium"
-                  : "text-sm text-muted-foreground hover:text-foreground"
-              }
-            >
+            </Link>
+            <Link href="/sorteio" className={linkClass("/sorteio")}>
               Sorteio
-            </NavLink>
-            <NavLink
-              to="/fases"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-sm font-medium"
-                  : "text-sm text-muted-foreground hover:text-foreground"
-              }
-            >
+            </Link>
+            <Link href="/fases" className={linkClass("/fases")}>
               Fases
-            </NavLink>
+            </Link>
           </nav>
           <div className="flex items-center gap-2">
             <Button

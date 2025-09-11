@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 const PHASES: Phase[] = [
   "Classificação",
