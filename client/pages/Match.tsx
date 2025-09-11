@@ -76,6 +76,8 @@ export default function Match() {
 }
 
 function TeamColumn({ title, color, players, matchId, update }: { title: string; color: string; players: any[]; matchId: string; update: (pid: string, fn: any) => void }) {
+  const { state } = useApp();
+  const events = state.matches.find((m) => m.id === matchId)?.events || {};
   return (
     <Card className="overflow-hidden border-0 shadow-sm">
       <div className="h-2 w-full" style={{ backgroundColor: color }} />
@@ -90,23 +92,34 @@ function TeamColumn({ title, color, players, matchId, update }: { title: string;
           {players.length === 0 && (
             <div className="rounded-md border p-4 text-sm text-muted-foreground">Sem escalação para este time. Faça o sorteio.</div>
           )}
-          {players.map((p: any) => (
-            <div key={p.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded bg-muted text-xs font-semibold">{p.jerseyNumber}</span>
-                <div>
-                  <div className="font-medium leading-4">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{p.position}</div>
+          {players.map((p: any) => {
+            const s = events[p.id] || { goals: 0, yellow: 0, red: false, destaque: false };
+            return (
+              <div key={p.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded bg-muted text-xs font-semibold">{p.jerseyNumber}</span>
+                  <div>
+                    <div className="font-medium leading-4">
+                      {p.name}
+                      {s.destaque && <Badge className="ml-2 bg-amber-400 hover:bg-amber-400 text-black">Destaque</Badge>}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{p.position}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">Gols: {s.goals}</Badge>
+                  <Badge className="bg-yellow-400 hover:bg-yellow-400 text-black">{s.yellow}</Badge>
+                  <Badge variant={s.red ? "destructive" : "outline"}>{s.red ? "Verm" : "OK"}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant={"outline"} onClick={() => update(p.id, (prev: any) => ({ ...prev, destaque: !prev.destaque }))}>Destaque</Button>
+                  <Button size="sm" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: prev.goals + 1 }))}>Gol +1</Button>
+                  <Button size="sm" variant="secondary" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: Math.min(2, prev.yellow + 1) }))}>Amarelo</Button>
+                  <Button size="sm" variant="destructive" onClick={() => update(p.id, (prev: any) => ({ ...prev, red: !prev.red }))}>Vermelho</Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant={"outline"} onClick={() => update(p.id, (prev: any) => ({ ...prev, destaque: !prev.destaque }))}>{"Destaque"}</Button>
-                <Button size="sm" onClick={() => update(p.id, (prev: any) => ({ ...prev, goals: prev.goals + 1 }))}>Gol +1</Button>
-                <Button size="sm" variant="secondary" onClick={() => update(p.id, (prev: any) => ({ ...prev, yellow: Math.min(2, prev.yellow + 1) }))}>Amarelo</Button>
-                <Button size="sm" variant="destructive" onClick={() => update(p.id, (prev: any) => ({ ...prev, red: !prev.red }))}>Vermelho</Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
