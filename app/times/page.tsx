@@ -7,7 +7,9 @@ export default function TimesPage() {
     <DashboardLayout>
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Cadastro de Times</h1>
-        <p className="text-muted-foreground">Crie times, defina cor e capacidade.</p>
+        <p className="text-muted-foreground">
+          Crie times, defina cor e capacidade.
+        </p>
       </div>
       <TeamsSection />
     </DashboardLayout>

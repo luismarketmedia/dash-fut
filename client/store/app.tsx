@@ -80,10 +80,16 @@ const STORAGE_KEY = "futebol-dashboard-state-v1";
 
 function loadState(): State {
   try {
-    const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    const raw =
+      typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (!raw) return initialState;
     const parsed = JSON.parse(raw) as State;
-    if (!parsed.players || !parsed.teams || !parsed.matches || !parsed.assignments) {
+    if (
+      !parsed.players ||
+      !parsed.teams ||
+      !parsed.matches ||
+      !parsed.assignments
+    ) {
       return initialState;
     }
     return parsed;
@@ -122,20 +128,26 @@ function reducer(state: State, action: Action): State {
     }
     case "ADD_PLAYER": {
       const payload = action.payload as any;
-      const withId: Player = "id" in payload ? payload : { id: crypto.randomUUID(), ...payload };
+      const withId: Player =
+        "id" in payload ? payload : { id: crypto.randomUUID(), ...payload };
       const next = { ...state, players: [...state.players, withId] };
       return next;
     }
     case "UPDATE_PLAYER": {
       const next = {
         ...state,
-        players: state.players.map((p) => (p.id === action.payload.id ? action.payload : p)),
+        players: state.players.map((p) =>
+          p.id === action.payload.id ? action.payload : p,
+        ),
       };
       return next;
     }
     case "DELETE_PLAYER": {
       const assignments: Assignments = Object.fromEntries(
-        Object.entries(state.assignments).map(([tid, list]) => [tid, list.filter((pid) => pid !== action.payload.id)]),
+        Object.entries(state.assignments).map(([tid, list]) => [
+          tid,
+          list.filter((pid) => pid !== action.payload.id),
+        ]),
       );
       const next = {
         ...state,
@@ -146,7 +158,8 @@ function reducer(state: State, action: Action): State {
     }
     case "ADD_TEAM": {
       const payload = action.payload as any;
-      const withId: Team = "id" in payload ? payload : { id: crypto.randomUUID(), ...payload };
+      const withId: Team =
+        "id" in payload ? payload : { id: crypto.randomUUID(), ...payload };
       const next = {
         ...state,
         teams: [...state.teams, withId],
@@ -157,7 +170,9 @@ function reducer(state: State, action: Action): State {
     case "UPDATE_TEAM": {
       const next = {
         ...state,
-        teams: state.teams.map((t) => (t.id === action.payload.id ? action.payload : t)),
+        teams: state.teams.map((t) =>
+          t.id === action.payload.id ? action.payload : t,
+        ),
       };
       return next;
     }
@@ -179,7 +194,9 @@ function reducer(state: State, action: Action): State {
     case "UPDATE_MATCH": {
       return {
         ...state,
-        matches: state.matches.map((m) => (m.id === action.payload.id ? action.payload : m)),
+        matches: state.matches.map((m) =>
+          m.id === action.payload.id ? action.payload : m,
+        ),
       };
     }
     case "DELETE_MATCH": {
@@ -200,15 +217,25 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
   drawTeams: () => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
-  updatePlayerStat: (matchId: string, playerId: string, updater: (prev: PlayerStats) => PlayerStats) => void;
+  updatePlayerStat: (
+    matchId: string,
+    playerId: string,
+    updater: (prev: PlayerStats) => PlayerStats,
+  ) => void;
   setUniqueDestaque: (matchId: string, playerId: string) => void;
   startPauseTimer: (matchId: string) => void;
   resetTimer: (matchId: string) => void;
   nextHalf: (matchId: string) => void;
 } | null>(null);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, baseDispatch] = useReducer(reducer, undefined as unknown as State, () => loadState());
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [state, baseDispatch] = useReducer(
+    reducer,
+    undefined as unknown as State,
+    () => loadState(),
+  );
 
   // Persist to local storage for offline fallback
   useEffect(() => {
@@ -218,13 +245,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Hydrate from Supabase on first load
   useEffect(() => {
     const load = async () => {
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
-      const [{ data: players }, { data: teams }, { data: assignments }, { data: matches }, { data: events }] = await Promise.all([
-        supabase.from("players").select("id, jersey_number, name, position, paid").then((r) => ({ data: (r.data || []).map((p: any) => ({ id: p.id, jerseyNumber: p.jersey_number, name: p.name, position: p.position, paid: p.paid })) })),
-        supabase.from("teams").select("id, name, color, capacity").then((r) => ({ data: (r.data || []) as any })),
-        supabase.from("assignments").select("team_id, player_id").then((r) => ({ data: (r.data || []) as any })),
-        supabase.from("matches").select("id, left_team_id, right_team_id, phase, started_at, half, remaining_ms").then((r) => ({ data: (r.data || []) as any })),
-        supabase.from("match_events").select("match_id, player_id, goals, yellow, red, destaque").then((r) => ({ data: (r.data || []) as any })),
+      if (
+        !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+        return;
+      const [
+        { data: players },
+        { data: teams },
+        { data: assignments },
+        { data: matches },
+        { data: events },
+      ] = await Promise.all([
+        supabase
+          .from("players")
+          .select("id, jersey_number, name, position, paid")
+          .then((r) => ({
+            data: (r.data || []).map((p: any) => ({
+              id: p.id,
+              jerseyNumber: p.jersey_number,
+              name: p.name,
+              position: p.position,
+              paid: p.paid,
+            })),
+          })),
+        supabase
+          .from("teams")
+          .select("id, name, color, capacity")
+          .then((r) => ({ data: (r.data || []) as any })),
+        supabase
+          .from("assignments")
+          .select("team_id, player_id")
+          .then((r) => ({ data: (r.data || []) as any })),
+        supabase
+          .from("matches")
+          .select(
+            "id, left_team_id, right_team_id, phase, started_at, half, remaining_ms",
+          )
+          .then((r) => ({ data: (r.data || []) as any })),
+        supabase
+          .from("match_events")
+          .select("match_id, player_id, goals, yellow, red, destaque")
+          .then((r) => ({ data: (r.data || []) as any })),
       ]);
 
       const assignMap: Assignments = {};
@@ -256,19 +318,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         events: eventsByMatch[m.id] || {},
       }));
 
-      const teamsNorm: Team[] = (teams || []).map((t: any) => ({ id: t.id, name: t.name, color: t.color, capacity: t.capacity }));
+      const teamsNorm: Team[] = (teams || []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        color: t.color,
+        capacity: t.capacity,
+      }));
 
-      baseDispatch(
-        {
-          type: "HYDRATE",
-          payload: {
-            players: (players || []) as Player[],
-            teams: teamsNorm,
-            assignments: assignMap,
-            matches: matchesNorm,
-          },
+      baseDispatch({
+        type: "HYDRATE",
+        payload: {
+          players: (players || []) as Player[],
+          teams: teamsNorm,
+          assignments: assignMap,
+          matches: matchesNorm,
         },
-      );
+      });
     };
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -278,10 +343,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const dispatch = (action: Action) => {
     let transformed: Action = action;
     if (action.type === "ADD_PLAYER" && !("id" in (action.payload as any))) {
-      transformed = { type: "ADD_PLAYER", payload: { id: crypto.randomUUID(), ...(action.payload as any) } } as Action;
+      transformed = {
+        type: "ADD_PLAYER",
+        payload: { id: crypto.randomUUID(), ...(action.payload as any) },
+      } as Action;
     }
     if (action.type === "ADD_TEAM" && !("id" in (action.payload as any))) {
-      transformed = { type: "ADD_TEAM", payload: { id: crypto.randomUUID(), ...(action.payload as any) } } as Action;
+      transformed = {
+        type: "ADD_TEAM",
+        payload: { id: crypto.randomUUID(), ...(action.payload as any) },
+      } as Action;
     }
     baseDispatch(transformed);
     void persistAction(transformed);
@@ -289,46 +360,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   async function persistAction(action: Action) {
     try {
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
+      if (
+        !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      )
+        return;
       switch (action.type) {
         case "ADD_PLAYER": {
           const p = action.payload as Player | Omit<Player, "id">;
           const payload = (p as any).id
-            ? { id: (p as any).id, jersey_number: (p as any).jerseyNumber, name: (p as any).name, position: (p as any).position, paid: (p as any).paid }
-            : { jersey_number: (p as any).jerseyNumber, name: (p as any).name, position: (p as any).position, paid: (p as any).paid };
+            ? {
+                id: (p as any).id,
+                jersey_number: (p as any).jerseyNumber,
+                name: (p as any).name,
+                position: (p as any).position,
+                paid: (p as any).paid,
+              }
+            : {
+                jersey_number: (p as any).jerseyNumber,
+                name: (p as any).name,
+                position: (p as any).position,
+                paid: (p as any).paid,
+              };
           await supabase.from("players").insert(payload).throwOnError();
           break;
         }
         case "UPDATE_PLAYER": {
           await supabase
             .from("players")
-            .update({ jersey_number: action.payload.jerseyNumber, name: action.payload.name, position: action.payload.position, paid: action.payload.paid })
+            .update({
+              jersey_number: action.payload.jerseyNumber,
+              name: action.payload.name,
+              position: action.payload.position,
+              paid: action.payload.paid,
+            })
             .eq("id", action.payload.id)
             .throwOnError();
           break;
         }
         case "DELETE_PLAYER": {
-          await supabase.from("players").delete().eq("id", action.payload.id).throwOnError();
+          await supabase
+            .from("players")
+            .delete()
+            .eq("id", action.payload.id)
+            .throwOnError();
           break;
         }
         case "ADD_TEAM": {
           const t = action.payload as Team | Omit<Team, "id">;
           const payload = (t as any).id
-            ? { id: (t as any).id, name: (t as any).name, color: (t as any).color, capacity: (t as any).capacity }
-            : { name: (t as any).name, color: (t as any).color, capacity: (t as any).capacity };
+            ? {
+                id: (t as any).id,
+                name: (t as any).name,
+                color: (t as any).color,
+                capacity: (t as any).capacity,
+              }
+            : {
+                name: (t as any).name,
+                color: (t as any).color,
+                capacity: (t as any).capacity,
+              };
           await supabase.from("teams").insert(payload).throwOnError();
           break;
         }
         case "UPDATE_TEAM": {
           await supabase
             .from("teams")
-            .update({ name: action.payload.name, color: action.payload.color, capacity: action.payload.capacity })
+            .update({
+              name: action.payload.name,
+              color: action.payload.color,
+              capacity: action.payload.capacity,
+            })
             .eq("id", action.payload.id)
             .throwOnError();
           break;
         }
         case "DELETE_TEAM": {
-          await supabase.from("teams").delete().eq("id", action.payload.id).throwOnError();
+          await supabase
+            .from("teams")
+            .delete()
+            .eq("id", action.payload.id)
+            .throwOnError();
           break;
         }
         case "SET_ASSIGNMENTS": {
@@ -336,8 +448,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           for (const [team_id, list] of Object.entries(action.payload)) {
             for (const player_id of list) rows.push({ team_id, player_id });
           }
-          await supabase.from("assignments").delete().neq("team_id", "").throwOnError();
-          if (rows.length) await supabase.from("assignments").insert(rows).throwOnError();
+          await supabase
+            .from("assignments")
+            .delete()
+            .neq("team_id", "")
+            .throwOnError();
+          if (rows.length)
+            await supabase.from("assignments").insert(rows).throwOnError();
           break;
         }
         case "ADD_MATCHES": {
@@ -347,7 +464,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             left_team_id: m.leftTeamId,
             right_team_id: m.rightTeamId,
             phase: m.phase,
-            started_at: m.startedAt ? new Date(m.startedAt).toISOString() : null,
+            started_at: m.startedAt
+              ? new Date(m.startedAt).toISOString()
+              : null,
             half: m.half,
             remaining_ms: m.remainingMs,
           }));
@@ -355,7 +474,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           break;
         }
         case "DELETE_MATCH": {
-          await supabase.from("matches").delete().eq("id", action.payload.id).throwOnError();
+          await supabase
+            .from("matches")
+            .delete()
+            .eq("id", action.payload.id)
+            .throwOnError();
           break;
         }
         case "UPDATE_MATCH": {
@@ -388,7 +511,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       running.forEach((m) => {
         const elapsed = now - (m.startedAt || 0);
         const newRemaining = Math.max(0, m.remainingMs - elapsed);
-        const updated: Match = { ...m, remainingMs: newRemaining, startedAt: now };
+        const updated: Match = {
+          ...m,
+          remainingMs: newRemaining,
+          startedAt: now,
+        };
         if (newRemaining === 0) updated.startedAt = null;
         baseDispatch({ type: "UPDATE_MATCH", payload: updated });
       });
@@ -405,7 +532,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const gks = players.filter((p) => p.position === "GOL");
     const others = players.filter((p) => p.position !== "GOL");
 
-    const result: Assignments = Object.fromEntries(teams.map((t) => [t.id, [] as string[]]));
+    const result: Assignments = Object.fromEntries(
+      teams.map((t) => [t.id, [] as string[]]),
+    );
 
     const shuffledGk = shuffle(gks);
     teams.forEach((team, idx) => {
@@ -455,26 +584,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
   };
 
-  const updatePlayerStat = (matchId: string, playerId: string, updater: (prev: PlayerStats) => PlayerStats) => {
+  const updatePlayerStat = (
+    matchId: string,
+    playerId: string,
+    updater: (prev: PlayerStats) => PlayerStats,
+  ) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
-    const prev = match.events[playerId] || { goals: 0, yellow: 0, red: false, destaque: false };
+    const prev = match.events[playerId] || {
+      goals: 0,
+      yellow: 0,
+      red: false,
+      destaque: false,
+    };
     const nextStats = updater(prev);
-    const updated: Match = { ...match, events: { ...match.events, [playerId]: nextStats } };
+    const updated: Match = {
+      ...match,
+      events: { ...match.events, [playerId]: nextStats },
+    };
     baseDispatch({ type: "UPDATE_MATCH", payload: updated });
     void supabase
       .from("match_events")
-      .upsert({ match_id: matchId, player_id: playerId, goals: nextStats.goals, yellow: nextStats.yellow, red: nextStats.red, destaque: nextStats.destaque }, { onConflict: "match_id,player_id" })
+      .upsert(
+        {
+          match_id: matchId,
+          player_id: playerId,
+          goals: nextStats.goals,
+          yellow: nextStats.yellow,
+          red: nextStats.red,
+          destaque: nextStats.destaque,
+        },
+        { onConflict: "match_id,player_id" },
+      )
       .throwOnError();
   };
 
   const setUniqueDestaque = (matchId: string, playerId: string) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
-    const current = match.events[playerId] || { goals: 0, yellow: 0, red: false, destaque: false };
+    const current = match.events[playerId] || {
+      goals: 0,
+      yellow: 0,
+      red: false,
+      destaque: false,
+    };
     const willBe = !current.destaque;
     const newEvents: Record<string, PlayerStats> = {};
-    for (const [pid, stats] of Object.entries(match.events)) newEvents[pid] = { ...stats, destaque: false };
+    for (const [pid, stats] of Object.entries(match.events))
+      newEvents[pid] = { ...stats, destaque: false };
     newEvents[playerId] = { ...current, destaque: willBe };
     const updated: Match = { ...match, events: newEvents };
     baseDispatch({ type: "UPDATE_MATCH", payload: updated });
@@ -491,7 +648,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ops.push(
       supabase
         .from("match_events")
-        .upsert({ match_id: matchId, player_id: playerId, goals: newEvents[playerId].goals, yellow: newEvents[playerId].yellow, red: newEvents[playerId].red, destaque: willBe }, { onConflict: "match_id,player_id" }),
+        .upsert(
+          {
+            match_id: matchId,
+            player_id: playerId,
+            goals: newEvents[playerId].goals,
+            yellow: newEvents[playerId].yellow,
+            red: newEvents[playerId].red,
+            destaque: willBe,
+          },
+          { onConflict: "match_id,player_id" },
+        ),
     );
     void Promise.all(ops);
   };
@@ -499,33 +666,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const startPauseTimer = (matchId: string) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
-    const updated: Match = { ...match, startedAt: match.startedAt ? null : Date.now() };
+    const updated: Match = {
+      ...match,
+      startedAt: match.startedAt ? null : Date.now(),
+    };
     baseDispatch({ type: "UPDATE_MATCH", payload: updated });
     void supabase
       .from("matches")
-      .update({ started_at: updated.startedAt ? new Date(updated.startedAt).toISOString() : null })
+      .update({
+        started_at: updated.startedAt
+          ? new Date(updated.startedAt).toISOString()
+          : null,
+      })
       .eq("id", matchId);
   };
 
   const resetTimer = (matchId: string) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
-    const updated: Match = { ...match, startedAt: null, remainingMs: 20 * 60 * 1000 };
+    const updated: Match = {
+      ...match,
+      startedAt: null,
+      remainingMs: 20 * 60 * 1000,
+    };
     baseDispatch({ type: "UPDATE_MATCH", payload: updated });
-    void supabase.from("matches").update({ started_at: null, remaining_ms: updated.remainingMs }).eq("id", matchId);
+    void supabase
+      .from("matches")
+      .update({ started_at: null, remaining_ms: updated.remainingMs })
+      .eq("id", matchId);
   };
 
   const nextHalf = (matchId: string) => {
     const match = state.matches.find((m) => m.id === matchId);
     if (!match) return;
     const newHalf = match.half === 1 ? 2 : 1;
-    const updated: Match = { ...match, half: newHalf, startedAt: null, remainingMs: 20 * 60 * 1000 };
+    const updated: Match = {
+      ...match,
+      half: newHalf,
+      startedAt: null,
+      remainingMs: 20 * 60 * 1000,
+    };
     baseDispatch({ type: "UPDATE_MATCH", payload: updated });
-    void supabase.from("matches").update({ half: updated.half, started_at: null, remaining_ms: updated.remainingMs }).eq("id", matchId);
+    void supabase
+      .from("matches")
+      .update({
+        half: updated.half,
+        started_at: null,
+        remaining_ms: updated.remainingMs,
+      })
+      .eq("id", matchId);
   };
 
   const value = useMemo(
-    () => ({ state, dispatch, drawTeams, generateMatches, updatePlayerStat, setUniqueDestaque, startPauseTimer, resetTimer, nextHalf }),
+    () => ({
+      state,
+      dispatch,
+      drawTeams,
+      generateMatches,
+      updatePlayerStat,
+      setUniqueDestaque,
+      startPauseTimer,
+      resetTimer,
+      nextHalf,
+    }),
     [state],
   );
 
