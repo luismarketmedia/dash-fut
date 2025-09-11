@@ -6,18 +6,18 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
+    
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
 
-    /* Linting */
+    
     "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -25,17 +25,19 @@
     "noFallthroughCasesInSwitch": false,
     "strictNullChecks": false,
 
-    /* Path mapping */
+    
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./client/*"],
+      "@/*": ["./client/*", "./app/*"],
       "@shared/*": ["./shared/*"]
     }
   },
   "include": [
+    "app/**/*",
     "client/**/*",
     "server/**/*",
     "shared/**/*",
+    "next-env.d.ts",
     "vite.config.ts",
     "vite.config.server.ts"
   ],

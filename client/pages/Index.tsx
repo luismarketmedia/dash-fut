@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/dashboard/Layout";
 import { useApp } from "@/store/app";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 export default function Index() {
   const { state } = useApp();
