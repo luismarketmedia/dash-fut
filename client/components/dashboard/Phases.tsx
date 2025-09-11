@@ -24,6 +24,7 @@ const PHASES: Phase[] = [
 export function PhasesSection() {
   const { state, generateMatches } = useApp();
   const [phase, setPhase] = useState<Phase>("Classificação");
+
   const selectedTeamIds = useMemo(
     () => state.teams.map((t) => t.id),
     [state.teams],
@@ -92,6 +93,7 @@ export function PhasesSection() {
                   const lt = state.teams.find((t) => t.id === m.leftTeamId);
                   const rt = state.teams.find((t) => t.id === m.rightTeamId);
                   if (!lt || !rt) return null;
+
                   const scoreFor = (teamId: string) => {
                     const ids = state.assignments[teamId] || [];
                     let s = 0;
@@ -101,8 +103,10 @@ export function PhasesSection() {
                     }
                     return s;
                   };
+
                   const ls = scoreFor(lt.id);
                   const rs = scoreFor(rt.id);
+
                   return (
                     <Card
                       key={m.id}
@@ -135,7 +139,7 @@ export function PhasesSection() {
                       </CardHeader>
                       <CardContent className="flex items-center justify-center">
                         <Link
-                          to={`/jogo/${m.id}`}
+                          href={`/jogo/${m.id}`}
                           className="text-primary underline"
                         >
                           Abrir jogo
