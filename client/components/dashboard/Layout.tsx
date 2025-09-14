@@ -81,12 +81,8 @@ export function DashboardLayout({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => (window.location.href = "/")}
-            >
-              Home
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/">Home</Link>
             </Button>
           </div>
         </div>
