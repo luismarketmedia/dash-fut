@@ -26,14 +26,14 @@ export function DrawSection() {
 
   return (
     <section id="sorteio" className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold">Sorteio de Times</h2>
           <p className="text-muted-foreground text-sm">
             Primeiro distribui goleiros, depois equilibra os demais.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" disabled={!canReset}>
