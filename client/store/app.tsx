@@ -118,6 +118,7 @@ type Action =
   | { type: "ADD_MATCHES"; payload: Match[] }
   | { type: "UPDATE_MATCH"; payload: Match }
   | { type: "DELETE_MATCH"; payload: { id: string } }
+  | { type: "CLEAR_MATCHES" }
   | { type: "RESET_ALL" };
 
 function reducer(state: State, action: Action): State {
@@ -205,6 +206,9 @@ function reducer(state: State, action: Action): State {
         matches: state.matches.filter((m) => m.id !== action.payload.id),
       };
     }
+    case "CLEAR_MATCHES": {
+      return { ...state, matches: [] };
+    }
     case "RESET_ALL":
       return initialState;
     default:
@@ -217,6 +221,7 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
   drawTeams: () => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
+  resetDrawAndPhases: () => void;
   updatePlayerStat: (
     matchId: string,
     playerId: string,
@@ -481,6 +486,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             .throwOnError();
           break;
         }
+        case "CLEAR_MATCHES": {
+          await Promise.all([
+            supabase.from("match_events").delete().neq("match_id", "").throwOnError(),
+            supabase.from("matches").delete().neq("id", "").throwOnError(),
+          ]);
+          break;
+        }
         case "UPDATE_MATCH": {
           // Skip frequent timer ticks to avoid heavy writes. Explicit operations handle persistence.
           break;
@@ -726,12 +738,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       .eq("id", matchId);
   };
 
+  const resetDrawAndPhases = () => {
+    dispatch({ type: "SET_ASSIGNMENTS", payload: {} });
+    if (state.matches.length) dispatch({ type: "CLEAR_MATCHES" });
+  };
+
   const value = useMemo(
     () => ({
       state,
       dispatch,
       drawTeams,
       generateMatches,
+      resetDrawAndPhases,
       updatePlayerStat,
       setUniqueDestaque,
       startPauseTimer,
