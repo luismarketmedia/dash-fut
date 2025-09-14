@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -118,6 +119,7 @@ type Action =
   | { type: "ADD_MATCHES"; payload: Match[] }
   | { type: "UPDATE_MATCH"; payload: Match }
   | { type: "DELETE_MATCH"; payload: { id: string } }
+  | { type: "CLEAR_MATCHES" }
   | { type: "RESET_ALL" };
 
 function reducer(state: State, action: Action): State {
@@ -205,6 +207,9 @@ function reducer(state: State, action: Action): State {
         matches: state.matches.filter((m) => m.id !== action.payload.id),
       };
     }
+    case "CLEAR_MATCHES": {
+      return { ...state, matches: [] };
+    }
     case "RESET_ALL":
       return initialState;
     default:
@@ -217,6 +222,7 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
   drawTeams: () => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
+  resetDrawAndPhases: () => void;
   updatePlayerStat: (
     matchId: string,
     playerId: string,
@@ -231,14 +237,20 @@ const AppContext = createContext<{
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, baseDispatch] = useReducer(
-    reducer,
-    undefined as unknown as State,
-    () => loadState(),
-  );
+  const [state, baseDispatch] = useReducer(reducer, initialState);
 
-  // Persist to local storage for offline fallback
+  // Hydrate from localStorage first (client-only) to avoid SSR mismatch
+  const hydratedRef = useRef(false);
   useEffect(() => {
+    const ls = loadState();
+    baseDispatch({ type: "HYDRATE", payload: ls });
+    hydratedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist to local storage for offline fallback, after hydration
+  useEffect(() => {
+    if (!hydratedRef.current) return;
     saveState(state);
   }, [state]);
 
@@ -334,6 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
           matches: matchesNorm,
         },
       });
+      hydratedRef.current = true;
     };
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -479,6 +492,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             .delete()
             .eq("id", action.payload.id)
             .throwOnError();
+          break;
+        }
+        case "CLEAR_MATCHES": {
+          await Promise.all([
+            supabase
+              .from("match_events")
+              .delete()
+              .neq("match_id", "")
+              .throwOnError(),
+            supabase.from("matches").delete().neq("id", "").throwOnError(),
+          ]);
           break;
         }
         case "UPDATE_MATCH": {
@@ -638,36 +662,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const ops: Promise<any>[] = [];
     for (const pid of Object.keys(match.events)) {
       ops.push(
-      supabase
-        .from("match_events")
-        .upsert(
-          {
-            match_id: matchId,
-            player_id: playerId,
-            goals: newEvents[playerId].goals,
-            yellow: newEvents[playerId].yellow,
-            red: newEvents[playerId].red,
-            destaque: willBe,
-          },
-          { onConflict: "match_id,player_id" },
-        )
-        .throwOnError() // garante que seja Promise
+        supabase
+          .from("match_events")
+          .upsert(
+            {
+              match_id: matchId,
+              player_id: playerId,
+              goals: newEvents[playerId].goals,
+              yellow: newEvents[playerId].yellow,
+              red: newEvents[playerId].red,
+              destaque: willBe,
+            },
+            { onConflict: "match_id,player_id" },
+          )
+          .throwOnError(), // garante que seja Promise
       );
     }
     ops.push(
-      supabase
-        .from("match_events")
-        .upsert(
-          {
-            match_id: matchId,
-            player_id: playerId,
-            goals: newEvents[playerId].goals,
-            yellow: newEvents[playerId].yellow,
-            red: newEvents[playerId].red,
-            destaque: willBe,
-          },
-          { onConflict: "match_id,player_id" },
-        ),
+      supabase.from("match_events").upsert(
+        {
+          match_id: matchId,
+          player_id: playerId,
+          goals: newEvents[playerId].goals,
+          yellow: newEvents[playerId].yellow,
+          red: newEvents[playerId].red,
+          destaque: willBe,
+        },
+        { onConflict: "match_id,player_id" },
+      ),
     );
     void Promise.all(ops);
   };
@@ -726,12 +748,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       .eq("id", matchId);
   };
 
+  const resetDrawAndPhases = () => {
+    dispatch({ type: "SET_ASSIGNMENTS", payload: {} });
+    if (state.matches.length) dispatch({ type: "CLEAR_MATCHES" });
+  };
+
   const value = useMemo(
     () => ({
       state,
       dispatch,
       drawTeams,
       generateMatches,
+      resetDrawAndPhases,
       updatePlayerStat,
       setUniqueDestaque,
       startPauseTimer,

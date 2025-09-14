@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useApp, Player, Position } from "@/store/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -217,12 +217,29 @@ function PlayerRow({
   const { dispatch } = useApp();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Player>(player);
+  const [jerseyEdit, setJerseyEdit] = useState<number>(player.jerseyNumber);
 
-  const paidIcon = player.paid ? (
-    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-  ) : (
-    <Circle className="h-4 w-4 text-muted-foreground" />
-  );
+  // Keep inline state in sync if global changes
+  useEffect(() => {
+    setJerseyEdit(player.jerseyNumber);
+    setForm(player);
+  }, [player]);
+
+  const commitJerseyIfChanged = () => {
+    const newNumber = Number.isFinite(jerseyEdit) ? jerseyEdit : 0;
+    if (newNumber !== player.jerseyNumber) {
+      dispatch({
+        type: "UPDATE_PLAYER",
+        payload: { ...player, jerseyNumber: Math.max(0, newNumber) },
+      });
+    }
+  };
+
+  const togglePaid = (paid: boolean) => {
+    if (paid !== player.paid) {
+      dispatch({ type: "UPDATE_PLAYER", payload: { ...player, paid } });
+    }
+  };
 
   const onSave = () => {
     dispatch({ type: "UPDATE_PLAYER", payload: form });
@@ -231,12 +248,32 @@ function PlayerRow({
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{player.jerseyNumber}</TableCell>
+      <TableCell className="font-medium">
+        <Input
+          type="number"
+          min={0}
+          value={jerseyEdit}
+          onChange={(e) => setJerseyEdit(parseInt(e.target.value || "0"))}
+          onBlur={commitJerseyIfChanged}
+          className="h-8 w-20 text-center"
+        />
+      </TableCell>
       <TableCell>{player.name}</TableCell>
       <TableCell>
         <Badge variant="secondary">{player.position}</Badge>
       </TableCell>
-      <TableCell>{paidIcon}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={`paid-inline-${player.id}`}
+            checked={player.paid}
+            onCheckedChange={(v) => togglePaid(!!v)}
+          />
+          <label htmlFor={`paid-inline-${player.id}`} className="text-xs">
+            Pago
+          </label>
+        </div>
+      </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
           <Dialog open={open} onOpenChange={setOpen}>
