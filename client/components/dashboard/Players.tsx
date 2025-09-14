@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useApp, Player, Position } from "@/store/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -220,7 +220,7 @@ function PlayerRow({
   const [jerseyEdit, setJerseyEdit] = useState<number>(player.jerseyNumber);
 
   // Keep inline state in sync if global changes
-  React.useEffect(() => {
+  useEffect(() => {
     setJerseyEdit(player.jerseyNumber);
     setForm(player);
   }, [player]);
