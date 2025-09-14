@@ -157,7 +157,8 @@ function PlayerTable() {
             String(p.jerseyNumber).includes(q) ||
             p.position.toLowerCase().includes(q),
         );
-    const byPos = pos === "ALL" ? byText : byText.filter((p) => p.position === pos);
+    const byPos =
+      pos === "ALL" ? byText : byText.filter((p) => p.position === pos);
     return byPos.slice().sort((a, b) => a.jerseyNumber - b.jerseyNumber);
   }, [state.players, query, pos]);
 
@@ -303,7 +304,11 @@ function PlayerRow({
         <div className="flex items-center justify-end gap-2">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 sm:h-10 sm:w-10"
+              >
                 <Pencil className="h-4 w-4" />
               </Button>
             </DialogTrigger>
@@ -360,7 +365,12 @@ function PlayerRow({
               </div>
             </DialogContent>
           </Dialog>
-          <Button size="icon" variant="ghost" onClick={onDelete} className="h-8 w-8 sm:h-10 sm:w-10">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onDelete}
+            className="h-8 w-8 sm:h-10 sm:w-10"
+          >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
