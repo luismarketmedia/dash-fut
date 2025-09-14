@@ -3,10 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function DrawSection() {
-  const { state, drawTeams } = useApp();
+  const { state, drawTeams, resetDrawAndPhases } = useApp();
   const { teams, assignments, players } = state;
+
+  const hasAssignments = Object.values(assignments).some(
+    (list) => (list?.length || 0) > 0,
+  );
+  const canReset = hasAssignments || state.matches.length > 0;
 
   return (
     <section id="sorteio" className="space-y-6">
@@ -17,12 +33,35 @@ export function DrawSection() {
             Primeiro distribui goleiros, depois equilibra os demais.
           </p>
         </div>
-        <Button
-          onClick={drawTeams}
-          disabled={teams.length === 0 || players.length === 0}
-        >
-          Sortear
-        </Button>
+        <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={!canReset}>
+                Resetar sorteio
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Resetar sorteio e fases?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso vai remover todas as distribuições de jogadores e todos os confrontos gerados. Jogadores e times serão mantidos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={resetDrawAndPhases}>
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button
+            onClick={drawTeams}
+            disabled={teams.length === 0 || players.length === 0}
+          >
+            Sortear
+          </Button>
+        </div>
       </header>
       {teams.length === 0 ? (
         <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
