@@ -829,3 +829,66 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
+
+function buildMockState(): State {
+  const teamNames = [
+    "Leões",
+    "Panteras",
+    "Falcões",
+    "Tubarões",
+    "Lobos",
+    "Águias",
+    "Rinocerontes",
+    "Tigres",
+  ];
+  const teamColors = [
+    "#ef4444",
+    "#f59e0b",
+    "#10b981",
+    "#3b82f6",
+    "#8b5cf6",
+    "#ec4899",
+    "#14b8a6",
+    "#f97316",
+  ];
+  const teams: Team[] = teamNames.map((name, i) => ({
+    id: crypto.randomUUID(),
+    name,
+    color: teamColors[i]!,
+    capacity: 8,
+  }));
+
+  const otherPositions: Position[] = [
+    "FIXO",
+    "MEIO",
+    "ALA DIREITA",
+    "ALA ESQUERDA",
+    "FRENTE",
+  ];
+
+  const players: Player[] = Array.from({ length: 64 }, (_, i) => {
+    const idx = i + 1;
+    const isGK = i % 8 === 0; // 8 goleiros distribuídos
+    const pos: Position = isGK
+      ? "GOL"
+      : otherPositions[(i % otherPositions.length)]!;
+    return {
+      id: crypto.randomUUID(),
+      jerseyNumber: idx,
+      name: `Jogador ${idx}`,
+      position: pos,
+      paid: Math.random() < 0.6,
+    };
+  });
+
+  const assignments: Assignments = Object.fromEntries(
+    teams.map((t) => [t.id, [] as string[]]),
+  );
+
+  return {
+    players,
+    teams,
+    assignments,
+    matches: [],
+  };
+}
