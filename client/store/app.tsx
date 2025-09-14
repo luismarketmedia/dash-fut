@@ -588,23 +588,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const generateMatches = (phase: Phase, teamIds: string[]) => {
-    const ids = shuffle(teamIds.slice());
-    const pairs: [string, string][] = [];
-    while (ids.length >= 2) {
-      const a = ids.shift()!;
-      const b = ids.shift()!;
-      pairs.push([a, b]);
+    const existing = new Set(
+      state.matches
+        .filter((m) => m.phase === phase)
+        .map((m) => [m.leftTeamId, m.rightTeamId].sort().join("::")),
+    );
+
+    let pairs: [string, string][] = [];
+
+    if (phase === "Classificação") {
+      // Round-robin: every team plays every other team once
+      const ids = teamIds.slice();
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          pairs.push([ids[i]!, ids[j]!]);
+        }
+      }
+      // Shuffle to randomize order of the full list
+      pairs = shuffle(pairs);
+    } else {
+      // Knockout/others: simple pairing by shuffle
+      const ids = shuffle(teamIds.slice());
+      while (ids.length >= 2) {
+        const a = ids.shift()!;
+        const b = ids.shift()!;
+        pairs.push([a, b]);
+      }
     }
-    const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
-      id: crypto.randomUUID(),
-      leftTeamId,
-      rightTeamId,
-      phase,
-      half: 1,
-      remainingMs: 20 * 60 * 1000,
-      startedAt: null,
-      events: {},
-    }));
+
+    const created: Match[] = pairs
+      .filter(([a, b]) => !existing.has([a, b].sort().join("::")))
+      .map(([leftTeamId, rightTeamId]) => ({
+        id: crypto.randomUUID(),
+        leftTeamId,
+        rightTeamId,
+        phase,
+        half: 1,
+        remainingMs: 20 * 60 * 1000,
+        startedAt: null,
+        events: {},
+      }));
+
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
   };
 
