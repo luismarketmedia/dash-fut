@@ -26,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 const POSITIONS: Position[] = [
   "GOL",
@@ -145,10 +145,11 @@ function PlayerForm() {
 function PlayerTable() {
   const { state, dispatch } = useApp();
   const [query, setQuery] = useState("");
+  const [pos, setPos] = useState<"ALL" | Position>("ALL");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = !q
+    const byText = !q
       ? state.players
       : state.players.filter(
           (p) =>
@@ -156,17 +157,34 @@ function PlayerTable() {
             String(p.jerseyNumber).includes(q) ||
             p.position.toLowerCase().includes(q),
         );
-    return base.slice().sort((a, b) => a.jerseyNumber - b.jerseyNumber);
-  }, [state.players, query]);
+    const byPos = pos === "ALL" ? byText : byText.filter((p) => p.position === pos);
+    return byPos.slice().sort((a, b) => a.jerseyNumber - b.jerseyNumber);
+  }, [state.players, query, pos]);
 
   return (
     <div className="rounded-lg border bg-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nome, número ou posição"
-        />
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por nome, número ou posição"
+            className="w-full sm:w-64"
+          />
+          <Select value={pos} onValueChange={(v) => setPos(v as any)}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Todas as posições" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas as posições</SelectItem>
+              {POSITIONS.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Badge variant="outline">Total: {state.players.length}</Badge>
       </div>
       <div className="overflow-x-auto">
@@ -175,9 +193,9 @@ function PlayerTable() {
             <TableRow>
               <TableHead>#</TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead>Posição</TableHead>
-              <TableHead>Pago</TableHead>
-              <TableHead className="w-24 text-right">Ações</TableHead>
+              <TableHead className="hidden sm:table-cell">Posição</TableHead>
+              <TableHead className="hidden sm:table-cell">Pago</TableHead>
+              <TableHead className="w-20 text-right sm:w-24">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -255,14 +273,21 @@ function PlayerRow({
           value={jerseyEdit}
           onChange={(e) => setJerseyEdit(parseInt(e.target.value || "0"))}
           onBlur={commitJerseyIfChanged}
-          className="h-8 w-20 text-center"
+          className="h-8 w-16 text-center sm:w-20"
         />
       </TableCell>
-      <TableCell>{player.name}</TableCell>
       <TableCell>
+        <div className="flex items-center gap-2">
+          <span className="truncate">{player.name}</span>
+          <span className="sm:hidden">
+            <Badge variant="secondary">{player.position}</Badge>
+          </span>
+        </div>
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
         <Badge variant="secondary">{player.position}</Badge>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden sm:table-cell">
         <div className="flex items-center gap-2">
           <Checkbox
             id={`paid-inline-${player.id}`}
