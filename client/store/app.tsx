@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -236,14 +237,20 @@ const AppContext = createContext<{
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, baseDispatch] = useReducer(
-    reducer,
-    undefined as unknown as State,
-    () => loadState(),
-  );
+  const [state, baseDispatch] = useReducer(reducer, initialState);
 
-  // Persist to local storage for offline fallback
+  // Hydrate from localStorage first (client-only) to avoid SSR mismatch
+  const hydratedRef = useRef(false);
   useEffect(() => {
+    const ls = loadState();
+    baseDispatch({ type: "HYDRATE", payload: ls });
+    hydratedRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist to local storage for offline fallback, after hydration
+  useEffect(() => {
+    if (!hydratedRef.current) return;
     saveState(state);
   }, [state]);
 
@@ -339,6 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
           matches: matchesNorm,
         },
       });
+      hydratedRef.current = true;
     };
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
