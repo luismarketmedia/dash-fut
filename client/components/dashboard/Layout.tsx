@@ -58,6 +58,29 @@ export function DashboardLayout({
             </Link>
           </nav>
           <div className="flex items-center gap-2">
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="mr-2 h-4 w-4" /> Menu
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Link href="/jogadores">Jogadores</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/times">Times</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/sorteio">Sorteio</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/fases">Fases</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <Button
               variant="outline"
               size="sm"
