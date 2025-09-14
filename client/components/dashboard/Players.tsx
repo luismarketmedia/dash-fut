@@ -303,7 +303,7 @@ function PlayerRow({
         <div className="flex items-center justify-end gap-2">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="icon" variant="ghost">
+              <Button size="icon" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10">
                 <Pencil className="h-4 w-4" />
               </Button>
             </DialogTrigger>
@@ -360,7 +360,7 @@ function PlayerRow({
               </div>
             </DialogContent>
           </Dialog>
-          <Button size="icon" variant="ghost" onClick={onDelete}>
+          <Button size="icon" variant="ghost" onClick={onDelete} className="h-8 w-8 sm:h-10 sm:w-10">
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         </div>
