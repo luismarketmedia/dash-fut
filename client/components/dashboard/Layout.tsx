@@ -5,6 +5,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Menu } from "lucide-react";
 
 export function DashboardLayout({
   children,
@@ -51,12 +58,31 @@ export function DashboardLayout({
             </Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            >
-              Topo
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="mr-2 h-4 w-4" /> Menu
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Link href="/jogadores">Jogadores</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/times">Times</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/sorteio">Sorteio</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/fases">Fases</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/">Home</Link>
             </Button>
           </div>
         </div>

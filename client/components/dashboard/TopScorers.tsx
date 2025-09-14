@@ -64,7 +64,7 @@ export function TopScorersSection() {
             <TableRow>
               <TableHead>#</TableHead>
               <TableHead>Jogador</TableHead>
-              <TableHead>Time</TableHead>
+              <TableHead className="hidden sm:table-cell">Time</TableHead>
               <TableHead>Gols</TableHead>
             </TableRow>
           </TableHeader>
@@ -73,7 +73,7 @@ export function TopScorersSection() {
               <TableRow key={r.playerId}>
                 <TableCell>{i + 1}</TableCell>
                 <TableCell>{r.name}</TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <span className="inline-flex items-center gap-2">
                     <span
                       className="inline-block h-3 w-3 rounded"

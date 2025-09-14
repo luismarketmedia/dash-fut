@@ -111,12 +111,12 @@ export function StandingsSection() {
               <TableHead>#</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>P</TableHead>
-              <TableHead>V</TableHead>
-              <TableHead>E</TableHead>
-              <TableHead>D</TableHead>
-              <TableHead>GF</TableHead>
-              <TableHead>GS</TableHead>
-              <TableHead>SG</TableHead>
+              <TableHead className="hidden sm:table-cell">V</TableHead>
+              <TableHead className="hidden sm:table-cell">E</TableHead>
+              <TableHead className="hidden sm:table-cell">D</TableHead>
+              <TableHead className="hidden sm:table-cell">GF</TableHead>
+              <TableHead className="hidden sm:table-cell">GS</TableHead>
+              <TableHead className="hidden sm:table-cell">SG</TableHead>
               <TableHead>Pts</TableHead>
             </TableRow>
           </TableHeader>
@@ -134,12 +134,12 @@ export function StandingsSection() {
                   </span>
                 </TableCell>
                 <TableCell>{r.P}</TableCell>
-                <TableCell>{r.V}</TableCell>
-                <TableCell>{r.E}</TableCell>
-                <TableCell>{r.D}</TableCell>
-                <TableCell>{r.GF}</TableCell>
-                <TableCell>{r.GA}</TableCell>
-                <TableCell>{r.SG}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.V}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.E}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.D}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.GF}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.GA}</TableCell>
+                <TableCell className="hidden sm:table-cell">{r.SG}</TableCell>
                 <TableCell className="font-semibold">{r.Pts}</TableCell>
               </TableRow>
             ))}
