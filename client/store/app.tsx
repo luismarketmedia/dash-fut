@@ -360,16 +360,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
-    const isEmpty =
-      state.players.length === 0 &&
-      state.teams.length === 0 &&
-      state.matches.length === 0;
-    if (!hasSupabase && isEmpty) {
+    const missingCoreData = state.players.length === 0 || state.teams.length === 0;
+    if (!hasSupabase && missingCoreData) {
       const mock = buildMockState();
       baseDispatch({ type: "HYDRATE", payload: mock });
       seededRef.current = true;
     }
-  }, [state.players.length, state.teams.length, state.matches.length]);
+  }, [state.players.length, state.teams.length]);
 
   // Wrapper dispatch to also persist to Supabase
   const dispatch = (action: Action) => {
