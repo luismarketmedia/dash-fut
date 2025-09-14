@@ -84,9 +84,9 @@ export function DashboardLayout({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              onClick={() => (window.location.href = "/")}
             >
-              Topo
+              Home
             </Button>
           </div>
         </div>
