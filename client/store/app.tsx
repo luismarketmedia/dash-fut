@@ -222,6 +222,7 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
   drawTeams: () => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
+  generateEliminationFromStandings: (phase: Exclude<Phase, "Classificação">) => void;
   resetDrawAndPhases: () => void;
   updatePlayerStat: (
     matchId: string,
@@ -634,12 +635,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       pairs = rounds.flat();
     } else {
-      // Knockout/others: simple pairing by shuffle
-      const ids = shuffle(teamIds.slice());
-      while (ids.length >= 2) {
-        const a = ids.shift()!;
-        const b = ids.shift()!;
-        pairs.push([a, b]);
+      // Elimination: pair sequentially based on provided order (can be seeded externally)
+      const ids = teamIds.slice();
+      for (let i = 0; i + 1 < ids.length; i += 2) {
+        pairs.push([ids[i]!, ids[i + 1]!]);
       }
     }
 
@@ -658,6 +657,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
   };
+
+  function generateEliminationFromStandings(phase: Exclude<Phase, "Classificação">) {
+    const needed = phase === "Oitavas" ? 16 : phase === "Quartas" ? 8 : phase === "Semifinal" ? 4 : 2;
+    const stats = new Map<string, { teamId: string; name: string; color: string; Pts: number; SG: number; GF: number }>();
+    for (const t of state.teams) stats.set(t.id, { teamId: t.id, name: t.name, color: t.color, Pts: 0, SG: 0, GF: 0 });
+    const goalsFor = (teamId: string, match: Match) => {
+      const ids = state.assignments[teamId] || [];
+      let s = 0;
+      for (const pid of ids) {
+        const ev = match.events[pid];
+        if (ev) s += ev.goals;
+      }
+      return s;
+    };
+    for (const m of state.matches) {
+      const A = stats.get(m.leftTeamId);
+      const B = stats.get(m.rightTeamId);
+      if (!A || !B) continue;
+      const ga = goalsFor(A.teamId, m);
+      const gb = goalsFor(B.teamId, m);
+      A.GF += ga; B.GF += gb;
+      A.SG += ga - gb; B.SG += gb - ga;
+      if (ga > gb) A.Pts += 3; else if (ga < gb) B.Pts += 3; else { A.Pts += 1; B.Pts += 1; }
+    }
+    const table = Array.from(stats.values()).sort((a, b) => b.Pts - a.Pts || b.SG - a.SG || b.GF - a.GF || a.name.localeCompare(b.name));
+    const ids = table.slice(0, Math.min(needed, table.length)).map(r => r.teamId);
+    const pairs: [string, string][] = [];
+    let i = 0, j = ids.length - 1;
+    while (i < j) { pairs.push([ids[i]!, ids[j]!] as [string, string]); i++; j--; }
+    const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
+      id: crypto.randomUUID(), leftTeamId, rightTeamId, phase, half: 1, remainingMs: 20 * 60 * 1000, startedAt: null, events: {},
+    }));
+    if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
+  }
 
   const updatePlayerStat = (
     matchId: string,
@@ -810,6 +843,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch,
       drawTeams,
       generateMatches,
+      generateEliminationFromStandings,
       resetDrawAndPhases,
       updatePlayerStat,
       setUniqueDestaque,
