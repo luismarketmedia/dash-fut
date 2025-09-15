@@ -111,7 +111,11 @@ export function PhasesSection() {
             </SelectContent>
           </Select>
           <Button
-            onClick={() => generateMatches(phase, selectedTeamIds)}
+            onClick={() =>
+              phase === "Classificação"
+                ? generateMatches(phase, selectedTeamIds)
+                : generateEliminationFromStandings(phase as any)
+            }
             disabled={state.teams.length < 2}
           >
             Sortear confrontos
