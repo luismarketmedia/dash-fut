@@ -24,7 +24,7 @@ const PHASES: Phase[] = [
 const MATCHES_PER_WEEK = 4;
 
 export function PhasesSection() {
-  const { state, generateMatches } = useApp();
+  const { state, generateMatches, generateEliminationFromStandings } = useApp();
   const [phase, setPhase] = useState<Phase>("Classificação");
 
   const selectedTeamIds = useMemo(
