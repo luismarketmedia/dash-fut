@@ -239,11 +239,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, baseDispatch] = useReducer(reducer, initialState);
 
-  // Hydrate from localStorage first (client-only) to avoid SSR mismatch
+  // Hydrate from localStorage (client-only). If no Supabase and missing core data, seed mocks.
   const hydratedRef = useRef(false);
   useEffect(() => {
     const ls = loadState();
-    baseDispatch({ type: "HYDRATE", payload: ls });
+    const hasSupabase = !!(
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const shouldSeed = !hasSupabase && (!ls.players?.length || !ls.teams?.length);
+    const payload = shouldSeed ? buildMockState() : ls;
+    baseDispatch({ type: "HYDRATE", payload: payload });
     hydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -352,21 +358,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Seed mock data if there is no Supabase configuration and local state is empty
-  const seededRef = useRef(false);
-  useEffect(() => {
-    if (seededRef.current) return;
-    const hasSupabase = !!(
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
-    const missingCoreData = state.players.length === 0 || state.teams.length === 0;
-    if (!hasSupabase && missingCoreData) {
-      const mock = buildMockState();
-      baseDispatch({ type: "HYDRATE", payload: mock });
-      seededRef.current = true;
-    }
-  }, [state.players.length, state.teams.length]);
 
   // Wrapper dispatch to also persist to Supabase
   const dispatch = (action: Action) => {
