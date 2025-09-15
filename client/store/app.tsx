@@ -222,6 +222,9 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
   drawTeams: () => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
+  generateEliminationFromStandings: (
+    phase: Exclude<Phase, "Classificação">,
+  ) => void;
   resetDrawAndPhases: () => void;
   updatePlayerStat: (
     matchId: string,
@@ -239,11 +242,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, baseDispatch] = useReducer(reducer, initialState);
 
-  // Hydrate from localStorage first (client-only) to avoid SSR mismatch
+  // Hydrate from localStorage (client-only). If no Supabase and missing core data, seed mocks.
   const hydratedRef = useRef(false);
   useEffect(() => {
     const ls = loadState();
-    baseDispatch({ type: "HYDRATE", payload: ls });
+    const hasSupabase = !!(
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const shouldSeed =
+      !hasSupabase && (!ls.players?.length || !ls.teams?.length);
+    const payload = shouldSeed ? buildMockState() : ls;
+    baseDispatch({ type: "HYDRATE", payload: payload });
     hydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -588,13 +598,184 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const generateMatches = (phase: Phase, teamIds: string[]) => {
-    const ids = shuffle(teamIds.slice());
-    const pairs: [string, string][] = [];
-    while (ids.length >= 2) {
-      const a = ids.shift()!;
-      const b = ids.shift()!;
-      pairs.push([a, b]);
+    const existing = new Set(
+      state.matches
+        .filter((m) => m.phase === phase)
+        .map((m) => [m.leftTeamId, m.rightTeamId].sort().join("::")),
+    );
+
+    let pairs: [string, string][] = [];
+
+    if (phase === "Classificação") {
+      const ids = shuffle(teamIds.slice());
+      if (ids.length % 2 !== 0) ids.push("_BYE_");
+      const n = ids.length;
+      const rounds: [string, string][][] = [];
+      let arr = ids.slice();
+      for (let r = 0; r < n - 1; r++) {
+        let round: [string, string][] = [];
+        for (let i = 0; i < n / 2; i++) {
+          const a = arr[i]!;
+          const b = arr[n - 1 - i]!;
+          if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
+        }
+        // randomize order of games in this round
+        round = shuffle(round);
+        rounds.push(round);
+        // rotate all except first element
+        const fixed = arr[0]!;
+        const rest = arr.slice(1);
+        rest.unshift(rest.pop()!);
+        arr = [fixed, ...rest];
+      }
+      // If user expects number_of_teams rounds, add an extra round by swapping home/away of first round (keeps constraints, order randomized)
+      if (rounds.length < n) {
+        const extra = shuffle(
+          rounds[0]!.map(([a, b]) => [b, a] as [string, string]),
+        );
+        rounds.push(extra);
+      }
+      pairs = rounds.flat();
+    } else {
+      // Elimination: pair sequentially based on provided order (can be seeded externally)
+      const ids = teamIds.slice();
+      for (let i = 0; i + 1 < ids.length; i += 2) {
+        pairs.push([ids[i]!, ids[i + 1]!]);
+      }
     }
+
+    const created: Match[] = pairs
+      .filter(([a, b]) => !existing.has([a, b].sort().join("::")))
+      .map(([leftTeamId, rightTeamId]) => ({
+        id: crypto.randomUUID(),
+        leftTeamId,
+        rightTeamId,
+        phase,
+        half: 1,
+        remainingMs: 20 * 60 * 1000,
+        startedAt: null,
+        events: {},
+      }));
+
+    if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
+  };
+
+  function getQualifiersForPhase(
+    phase: Exclude<Phase, "Classificação">,
+    totalTeams: number,
+  ) {
+    const key =
+      phase === "Oitavas"
+        ? "NEXT_PUBLIC_QUALIFIERS_OITAVAS"
+        : phase === "Quartas"
+          ? "NEXT_PUBLIC_QUALIFIERS_QUARTAS"
+          : phase === "Semifinal"
+            ? "NEXT_PUBLIC_QUALIFIERS_SEMIFINAL"
+            : "NEXT_PUBLIC_QUALIFIERS_FINAL";
+    const raw = (process.env as any)[key];
+    const n = raw ? parseInt(String(raw), 10) : NaN;
+    if (Number.isFinite(n) && n > 1) return Math.min(n, totalTeams);
+    // Fallback: default to all teams available for first KO, else standard sizes
+    if (phase === "Oitavas") return totalTeams;
+    if (phase === "Quartas") return Math.min(8, totalTeams);
+    if (phase === "Semifinal") return Math.min(4, totalTeams);
+    return Math.min(2, totalTeams);
+  }
+
+  function generateEliminationFromStandings(
+    phase: Exclude<Phase, "Classificação">,
+  ) {
+    const totalTeams = state.teams.length;
+    const qualifiers = getQualifiersForPhase(phase, totalTeams);
+
+    const stats = new Map<
+      string,
+      {
+        teamId: string;
+        name: string;
+        color: string;
+        Pts: number;
+        SG: number;
+        GF: number;
+      }
+    >();
+    for (const t of state.teams)
+      stats.set(t.id, {
+        teamId: t.id,
+        name: t.name,
+        color: t.color,
+        Pts: 0,
+        SG: 0,
+        GF: 0,
+      });
+
+    const goalsFor = (teamId: string, match: Match) => {
+      const ids = state.assignments[teamId] || [];
+      let s = 0;
+      for (const pid of ids) {
+        const ev = match.events[pid];
+        if (ev) s += ev.goals;
+      }
+      return s;
+    };
+
+    for (const m of state.matches) {
+      const A = stats.get(m.leftTeamId);
+      const B = stats.get(m.rightTeamId);
+      if (!A || !B) continue;
+      const ga = goalsFor(A.teamId, m);
+      const gb = goalsFor(B.teamId, m);
+      A.GF += ga;
+      B.GF += gb;
+      A.SG += ga - gb;
+      B.SG += gb - ga;
+      if (ga > gb) A.Pts += 3;
+      else if (ga < gb) B.Pts += 3;
+      else {
+        A.Pts += 1;
+        B.Pts += 1;
+      }
+    }
+
+    const table = Array.from(stats.values()).sort(
+      (a, b) =>
+        b.Pts - a.Pts ||
+        b.SG - a.SG ||
+        b.GF - a.GF ||
+        a.name.localeCompare(b.name),
+    );
+    const seeds = table
+      .slice(0, Math.min(qualifiers, table.length))
+      .map((r) => r.teamId);
+
+    const isPowerOfTwo = (x: number) => (x & (x - 1)) === 0;
+    const pairs: [string, string][] = [];
+
+    if (isPowerOfTwo(seeds.length)) {
+      let i = 0,
+        j = seeds.length - 1;
+      while (i < j) {
+        pairs.push([seeds[i]!, seeds[j]!] as [string, string]);
+        i++;
+        j--;
+      }
+    } else {
+      const target = 1 << Math.floor(Math.log2(seeds.length));
+      const byes = 2 * target - seeds.length;
+      const playIn = seeds.slice(byes);
+      const randomized = shuffle(playIn.slice());
+      for (let i = 0; i + 1 < randomized.length; i += 2) {
+        pairs.push([randomized[i]!, randomized[i + 1]!] as [string, string]);
+      }
+    }
+
+    // Remove existing matches for this phase to avoid leftovers when qualifiers change
+    state.matches
+      .filter((m) => m.phase === phase)
+      .forEach((m) =>
+        baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }),
+      );
+
     const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
       id: crypto.randomUUID(),
       leftTeamId,
@@ -606,7 +787,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       events: {},
     }));
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
-  };
+  }
 
   const updatePlayerStat = (
     matchId: string,
@@ -759,6 +940,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch,
       drawTeams,
       generateMatches,
+      generateEliminationFromStandings,
       resetDrawAndPhases,
       updatePlayerStat,
       setUniqueDestaque,
@@ -785,4 +967,67 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+function buildMockState(): State {
+  const teamNames = [
+    "Leões",
+    "Panteras",
+    "Falcões",
+    "Tubarões",
+    "Lobos",
+    "Águias",
+    "Rinocerontes",
+    "Tigres",
+  ];
+  const teamColors = [
+    "#ef4444",
+    "#f59e0b",
+    "#10b981",
+    "#3b82f6",
+    "#8b5cf6",
+    "#ec4899",
+    "#14b8a6",
+    "#f97316",
+  ];
+  const teams: Team[] = teamNames.map((name, i) => ({
+    id: crypto.randomUUID(),
+    name,
+    color: teamColors[i]!,
+    capacity: 8,
+  }));
+
+  const otherPositions: Position[] = [
+    "FIXO",
+    "MEIO",
+    "ALA DIREITA",
+    "ALA ESQUERDA",
+    "FRENTE",
+  ];
+
+  const players: Player[] = Array.from({ length: 64 }, (_, i) => {
+    const idx = i + 1;
+    const isGK = i % 8 === 0; // 8 goleiros distribuídos
+    const pos: Position = isGK
+      ? "GOL"
+      : otherPositions[i % otherPositions.length]!;
+    return {
+      id: crypto.randomUUID(),
+      jerseyNumber: idx,
+      name: `Jogador ${idx}`,
+      position: pos,
+      paid: Math.random() < 0.6,
+    };
+  });
+
+  const assignments: Assignments = Object.fromEntries(
+    teams.map((t) => [t.id, [] as string[]]),
+  );
+
+  return {
+    players,
+    teams,
+    assignments,
+    matches: [],
+  };
 }
