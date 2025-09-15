@@ -54,12 +54,28 @@ export function PhasesSection() {
     return groups;
   }, [state.matches, indexMap]);
 
-  const chunkWeeks = (arr: typeof state.matches) => {
-    const out: typeof state.matches[] = [];
-    for (let i = 0; i < arr.length; i += MATCHES_PER_WEEK) {
-      out.push(arr.slice(i, i + MATCHES_PER_WEEK));
+  const packWeeks = (arr: typeof state.matches) => {
+    const weeks: typeof state.matches[] = [];
+    for (const m of arr) {
+      const a = m.leftTeamId;
+      const b = m.rightTeamId;
+      let placed = false;
+      for (const wk of weeks) {
+        if (wk.length >= MATCHES_PER_WEEK) continue;
+        const used = new Set<string>();
+        wk.forEach((x) => {
+          used.add(x.leftTeamId);
+          used.add(x.rightTeamId);
+        });
+        if (!used.has(a) && !used.has(b)) {
+          wk.push(m);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) weeks.push([m]);
     }
-    return out;
+    return weeks;
   };
 
   const scoreFor = (teamId: string, match: (typeof state.matches)[number]) => {
