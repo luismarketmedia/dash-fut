@@ -21,7 +21,7 @@ const PHASES: Phase[] = [
   "Final",
 ];
 
-const MATCHES_PER_WEEK = 3;
+const MATCHES_PER_WEEK = 4;
 
 export function PhasesSection() {
   const { state, generateMatches } = useApp();
@@ -139,7 +139,7 @@ export function PhasesSection() {
                   {weeks.map((wk, idx) => (
                     <Card key={`${p}-week-${idx + 1}`} className="overflow-hidden border-0 shadow-sm">
                       <div className="border-b p-4 flex items-center justify-between">
-                        <div className="font-semibold">Semana {idx + 1}</div>
+                        <div className="font-semibold">Rodada {idx + 1}</div>
                         <Badge variant="outline">{wk.length} jogos</Badge>
                       </div>
                       <CardContent className="p-4">
