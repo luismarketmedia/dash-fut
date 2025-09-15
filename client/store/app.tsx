@@ -237,15 +237,33 @@ const AppContext = createContext<{
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [state, baseDispatch] = useReducer(reducer, initialState);
+  const [state, baseDispatch] = useReducer(
+    reducer,
+    initialState,
+    (init) => {
+      if (typeof window !== "undefined") {
+        const ls = loadState();
+        if (
+          (ls.players && ls.players.length) ||
+          (ls.teams && ls.teams.length) ||
+          (ls.matches && ls.matches.length)
+        ) {
+          return ls;
+        }
+        const hasSupabase = !!(
+          process.env.NEXT_PUBLIC_SUPABASE_URL &&
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
+        if (!hasSupabase) return buildMockState();
+      }
+      return init;
+    },
+  );
 
-  // Hydrate from localStorage first (client-only) to avoid SSR mismatch
+  // Mark hydrated; state initialized above
   const hydratedRef = useRef(false);
   useEffect(() => {
-    const ls = loadState();
-    baseDispatch({ type: "HYDRATE", payload: ls });
     hydratedRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Persist to local storage for offline fallback, after hydration
