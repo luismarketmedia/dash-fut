@@ -658,10 +658,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
   };
 
+  function getQualifiersForPhase(phase: Exclude<Phase, "Classificação">, totalTeams: number) {
+    const key = phase === "Oitavas"
+      ? "NEXT_PUBLIC_QUALIFIERS_OITAVAS"
+      : phase === "Quartas"
+      ? "NEXT_PUBLIC_QUALIFIERS_QUARTAS"
+      : phase === "Semifinal"
+      ? "NEXT_PUBLIC_QUALIFIERS_SEMIFINAL"
+      : "NEXT_PUBLIC_QUALIFIERS_FINAL";
+    const raw = (process.env as any)[key];
+    const n = raw ? parseInt(String(raw), 10) : NaN;
+    if (Number.isFinite(n) && n > 1) return Math.min(n, totalTeams);
+    // Fallback: default to all teams available for first KO, else standard sizes
+    if (phase === "Oitavas") return totalTeams;
+    if (phase === "Quartas") return Math.min(8, totalTeams);
+    if (phase === "Semifinal") return Math.min(4, totalTeams);
+    return Math.min(2, totalTeams);
+  }
+
   function generateEliminationFromStandings(phase: Exclude<Phase, "Classificação">) {
-    const needed = phase === "Oitavas" ? 16 : phase === "Quartas" ? 8 : phase === "Semifinal" ? 4 : 2;
+    const totalTeams = state.teams.length;
+    const qualifiers = getQualifiersForPhase(phase, totalTeams);
+
     const stats = new Map<string, { teamId: string; name: string; color: string; Pts: number; SG: number; GF: number }>();
     for (const t of state.teams) stats.set(t.id, { teamId: t.id, name: t.name, color: t.color, Pts: 0, SG: 0, GF: 0 });
+
     const goalsFor = (teamId: string, match: Match) => {
       const ids = state.assignments[teamId] || [];
       let s = 0;
@@ -671,6 +692,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return s;
     };
+
     for (const m of state.matches) {
       const A = stats.get(m.leftTeamId);
       const B = stats.get(m.rightTeamId);
@@ -681,13 +703,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       A.SG += ga - gb; B.SG += gb - ga;
       if (ga > gb) A.Pts += 3; else if (ga < gb) B.Pts += 3; else { A.Pts += 1; B.Pts += 1; }
     }
+
     const table = Array.from(stats.values()).sort((a, b) => b.Pts - a.Pts || b.SG - a.SG || b.GF - a.GF || a.name.localeCompare(b.name));
-    const ids = table.slice(0, Math.min(needed, table.length)).map(r => r.teamId);
+    const seeds = table.slice(0, Math.min(qualifiers, table.length)).map(r => r.teamId);
+
+    const isPowerOfTwo = (x: number) => (x & (x - 1)) === 0;
     const pairs: [string, string][] = [];
-    let i = 0, j = ids.length - 1;
-    while (i < j) { pairs.push([ids[i]!, ids[j]!] as [string, string]); i++; j--; }
+
+    if (isPowerOfTwo(seeds.length)) {
+      // Standard seeding: 1 vs last, 2 vs last-1, ...
+      let i = 0, j = seeds.length - 1;
+      while (i < j) { pairs.push([seeds[i]!, seeds[j]!] as [string, string]); i++; j--; }
+    } else {
+      // Play-in to nearest lower power of two with byes to top seeds
+      const target = 1 << Math.floor(Math.log2(seeds.length));
+      const byes = 2 * target - seeds.length; // top seeds with byes
+      const byeSeeds = seeds.slice(0, byes);
+      const playIn = seeds.slice(byes); // size = seeds.length - byes
+      // Pair play-in bottom with top among play-in; randomize order
+      const randomized = shuffle(playIn.slice());
+      for (let i = 0; i + 1 < randomized.length; i += 2) {
+        pairs.push([randomized[i]!, randomized[i + 1]!] as [string, string]);
+      }
+      // Note: byes implicitly advance; matches for next round will be generated after winners recorded.
+    }
+
     const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
-      id: crypto.randomUUID(), leftTeamId, rightTeamId, phase, half: 1, remainingMs: 20 * 60 * 1000, startedAt: null, events: {},
+      id: crypto.randomUUID(),
+      leftTeamId,
+      rightTeamId,
+      phase,
+      half: 1,
+      remainingMs: 20 * 60 * 1000,
+      startedAt: null,
+      events: {},
     }));
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
   }
