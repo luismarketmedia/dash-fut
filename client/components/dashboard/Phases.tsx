@@ -49,13 +49,13 @@ export function PhasesSection() {
     for (const m of state.matches) groups[m.phase].push(m);
     // Keep original insertion order per phase
     for (const p of PHASES) {
-      groups[p].sort((a, b) => (indexMap.get(a.id)! - indexMap.get(b.id)!));
+      groups[p].sort((a, b) => indexMap.get(a.id)! - indexMap.get(b.id)!);
     }
     return groups;
   }, [state.matches, indexMap]);
 
   const packWeeks = (arr: typeof state.matches) => {
-    const weeks: typeof state.matches[] = [];
+    const weeks: (typeof state.matches)[] = [];
     for (const m of arr) {
       const a = m.leftTeamId;
       const b = m.rightTeamId;
@@ -141,7 +141,10 @@ export function PhasesSection() {
               ) : (
                 <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {weeks.map((wk, idx) => (
-                    <Card key={`${p}-week-${idx + 1}`} className="overflow-hidden border-0 shadow-sm">
+                    <Card
+                      key={`${p}-week-${idx + 1}`}
+                      className="overflow-hidden border-0 shadow-sm"
+                    >
                       <div className="border-b p-4 flex items-center justify-between">
                         <div className="font-semibold">Rodada {idx + 1}</div>
                         <Badge variant="outline">{wk.length} jogos</Badge>
@@ -149,19 +152,43 @@ export function PhasesSection() {
                       <CardContent className="p-4">
                         <div className="space-y-3">
                           {wk.map((m) => {
-                            const lt = state.teams.find((t) => t.id === m.leftTeamId);
-                            const rt = state.teams.find((t) => t.id === m.rightTeamId);
+                            const lt = state.teams.find(
+                              (t) => t.id === m.leftTeamId,
+                            );
+                            const rt = state.teams.find(
+                              (t) => t.id === m.rightTeamId,
+                            );
                             if (!lt || !rt) return null;
                             const ls = scoreFor(lt.id, m);
                             const rs = scoreFor(rt.id, m);
                             return (
-                              <div key={m.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                              <div
+                                key={m.id}
+                                className="flex items-center justify-between gap-3 rounded-md border p-3"
+                              >
                                 <div className="flex items-center gap-2">
-                                  <span className="font-medium truncate" style={{ color: lt.color }}>{lt.name}</span>
-                                  <span className="font-mono">{ls} x {rs}</span>
-                                  <span className="font-medium truncate" style={{ color: rt.color }}>{rt.name}</span>
+                                  <span
+                                    className="font-medium truncate"
+                                    style={{ color: lt.color }}
+                                  >
+                                    {lt.name}
+                                  </span>
+                                  <span className="font-mono">
+                                    {ls} x {rs}
+                                  </span>
+                                  <span
+                                    className="font-medium truncate"
+                                    style={{ color: rt.color }}
+                                  >
+                                    {rt.name}
+                                  </span>
                                 </div>
-                                <Link href={`/jogo/${m.id}`} className="text-primary underline whitespace-nowrap">Abrir jogo</Link>
+                                <Link
+                                  href={`/jogo/${m.id}`}
+                                  className="text-primary underline whitespace-nowrap"
+                                >
+                                  Abrir jogo
+                                </Link>
                               </div>
                             );
                           })}

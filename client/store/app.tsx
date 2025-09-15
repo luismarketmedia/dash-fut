@@ -222,7 +222,9 @@ const AppContext = createContext<{
   dispatch: React.Dispatch<Action>;
   drawTeams: () => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
-  generateEliminationFromStandings: (phase: Exclude<Phase, "Classificação">) => void;
+  generateEliminationFromStandings: (
+    phase: Exclude<Phase, "Classificação">,
+  ) => void;
   resetDrawAndPhases: () => void;
   updatePlayerStat: (
     matchId: string,
@@ -248,7 +250,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
-    const shouldSeed = !hasSupabase && (!ls.players?.length || !ls.teams?.length);
+    const shouldSeed =
+      !hasSupabase && (!ls.players?.length || !ls.teams?.length);
     const payload = shouldSeed ? buildMockState() : ls;
     baseDispatch({ type: "HYDRATE", payload: payload });
     hydratedRef.current = true;
@@ -358,7 +361,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
 
   // Wrapper dispatch to also persist to Supabase
   const dispatch = (action: Action) => {
@@ -658,14 +660,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     if (created.length) dispatch({ type: "ADD_MATCHES", payload: created });
   };
 
-  function getQualifiersForPhase(phase: Exclude<Phase, "Classificação">, totalTeams: number) {
-    const key = phase === "Oitavas"
-      ? "NEXT_PUBLIC_QUALIFIERS_OITAVAS"
-      : phase === "Quartas"
-      ? "NEXT_PUBLIC_QUALIFIERS_QUARTAS"
-      : phase === "Semifinal"
-      ? "NEXT_PUBLIC_QUALIFIERS_SEMIFINAL"
-      : "NEXT_PUBLIC_QUALIFIERS_FINAL";
+  function getQualifiersForPhase(
+    phase: Exclude<Phase, "Classificação">,
+    totalTeams: number,
+  ) {
+    const key =
+      phase === "Oitavas"
+        ? "NEXT_PUBLIC_QUALIFIERS_OITAVAS"
+        : phase === "Quartas"
+          ? "NEXT_PUBLIC_QUALIFIERS_QUARTAS"
+          : phase === "Semifinal"
+            ? "NEXT_PUBLIC_QUALIFIERS_SEMIFINAL"
+            : "NEXT_PUBLIC_QUALIFIERS_FINAL";
     const raw = (process.env as any)[key];
     const n = raw ? parseInt(String(raw), 10) : NaN;
     if (Number.isFinite(n) && n > 1) return Math.min(n, totalTeams);
@@ -676,12 +682,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     return Math.min(2, totalTeams);
   }
 
-  function generateEliminationFromStandings(phase: Exclude<Phase, "Classificação">) {
+  function generateEliminationFromStandings(
+    phase: Exclude<Phase, "Classificação">,
+  ) {
     const totalTeams = state.teams.length;
     const qualifiers = getQualifiersForPhase(phase, totalTeams);
 
-    const stats = new Map<string, { teamId: string; name: string; color: string; Pts: number; SG: number; GF: number }>();
-    for (const t of state.teams) stats.set(t.id, { teamId: t.id, name: t.name, color: t.color, Pts: 0, SG: 0, GF: 0 });
+    const stats = new Map<
+      string,
+      {
+        teamId: string;
+        name: string;
+        color: string;
+        Pts: number;
+        SG: number;
+        GF: number;
+      }
+    >();
+    for (const t of state.teams)
+      stats.set(t.id, {
+        teamId: t.id,
+        name: t.name,
+        color: t.color,
+        Pts: 0,
+        SG: 0,
+        GF: 0,
+      });
 
     const goalsFor = (teamId: string, match: Match) => {
       const ids = state.assignments[teamId] || [];
@@ -699,20 +725,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!A || !B) continue;
       const ga = goalsFor(A.teamId, m);
       const gb = goalsFor(B.teamId, m);
-      A.GF += ga; B.GF += gb;
-      A.SG += ga - gb; B.SG += gb - ga;
-      if (ga > gb) A.Pts += 3; else if (ga < gb) B.Pts += 3; else { A.Pts += 1; B.Pts += 1; }
+      A.GF += ga;
+      B.GF += gb;
+      A.SG += ga - gb;
+      B.SG += gb - ga;
+      if (ga > gb) A.Pts += 3;
+      else if (ga < gb) B.Pts += 3;
+      else {
+        A.Pts += 1;
+        B.Pts += 1;
+      }
     }
 
-    const table = Array.from(stats.values()).sort((a, b) => b.Pts - a.Pts || b.SG - a.SG || b.GF - a.GF || a.name.localeCompare(b.name));
-    const seeds = table.slice(0, Math.min(qualifiers, table.length)).map(r => r.teamId);
+    const table = Array.from(stats.values()).sort(
+      (a, b) =>
+        b.Pts - a.Pts ||
+        b.SG - a.SG ||
+        b.GF - a.GF ||
+        a.name.localeCompare(b.name),
+    );
+    const seeds = table
+      .slice(0, Math.min(qualifiers, table.length))
+      .map((r) => r.teamId);
 
     const isPowerOfTwo = (x: number) => (x & (x - 1)) === 0;
     const pairs: [string, string][] = [];
 
     if (isPowerOfTwo(seeds.length)) {
-      let i = 0, j = seeds.length - 1;
-      while (i < j) { pairs.push([seeds[i]!, seeds[j]!] as [string, string]); i++; j--; }
+      let i = 0,
+        j = seeds.length - 1;
+      while (i < j) {
+        pairs.push([seeds[i]!, seeds[j]!] as [string, string]);
+        i++;
+        j--;
+      }
     } else {
       const target = 1 << Math.floor(Math.log2(seeds.length));
       const byes = 2 * target - seeds.length;
@@ -726,7 +772,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     // Remove existing matches for this phase to avoid leftovers when qualifiers change
     state.matches
       .filter((m) => m.phase === phase)
-      .forEach((m) => baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }));
+      .forEach((m) =>
+        baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }),
+      );
 
     const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
       id: crypto.randomUUID(),
@@ -962,7 +1010,7 @@ function buildMockState(): State {
     const isGK = i % 8 === 0; // 8 goleiros distribuídos
     const pos: Position = isGK
       ? "GOL"
-      : otherPositions[(i % otherPositions.length)]!;
+      : otherPositions[i % otherPositions.length]!;
     return {
       id: crypto.randomUUID(),
       jerseyNumber: idx,
