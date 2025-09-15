@@ -711,22 +711,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const pairs: [string, string][] = [];
 
     if (isPowerOfTwo(seeds.length)) {
-      // Standard seeding: 1 vs last, 2 vs last-1, ...
       let i = 0, j = seeds.length - 1;
       while (i < j) { pairs.push([seeds[i]!, seeds[j]!] as [string, string]); i++; j--; }
     } else {
-      // Play-in to nearest lower power of two with byes to top seeds
       const target = 1 << Math.floor(Math.log2(seeds.length));
-      const byes = 2 * target - seeds.length; // top seeds with byes
-      const byeSeeds = seeds.slice(0, byes);
-      const playIn = seeds.slice(byes); // size = seeds.length - byes
-      // Pair play-in bottom with top among play-in; randomize order
+      const byes = 2 * target - seeds.length;
+      const playIn = seeds.slice(byes);
       const randomized = shuffle(playIn.slice());
       for (let i = 0; i + 1 < randomized.length; i += 2) {
         pairs.push([randomized[i]!, randomized[i + 1]!] as [string, string]);
       }
-      // Note: byes implicitly advance; matches for next round will be generated after winners recorded.
     }
+
+    // Remove existing matches for this phase to avoid leftovers when qualifiers change
+    state.matches
+      .filter((m) => m.phase === phase)
+      .forEach((m) => baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }));
 
     const created: Match[] = pairs.map(([leftTeamId, rightTeamId]) => ({
       id: crypto.randomUUID(),
