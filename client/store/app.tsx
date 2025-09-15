@@ -604,15 +604,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     let pairs: [string, string][] = [];
 
     if (phase === "Classificação") {
-      // Round-robin: every team plays every other team once
-      const ids = teamIds.slice();
-      for (let i = 0; i < ids.length; i++) {
-        for (let j = i + 1; j < ids.length; j++) {
-          pairs.push([ids[i]!, ids[j]!]);
+      const ids = shuffle(teamIds.slice());
+      if (ids.length % 2 !== 0) ids.push("_BYE_");
+      const n = ids.length;
+      const rounds: [string, string][][] = [];
+      let arr = ids.slice();
+      for (let r = 0; r < n - 1; r++) {
+        const round: [string, string][] = [];
+        for (let i = 0; i < n / 2; i++) {
+          const a = arr[i]!;
+          const b = arr[n - 1 - i]!;
+          if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
         }
+        rounds.push(round);
+        // rotate all except first element
+        const fixed = arr[0]!;
+        const rest = arr.slice(1);
+        rest.unshift(rest.pop()!);
+        arr = [fixed, ...rest];
       }
-      // Shuffle to randomize order of the full list
-      pairs = shuffle(pairs);
+      pairs = rounds.flat();
     } else {
       // Knockout/others: simple pairing by shuffle
       const ids = shuffle(teamIds.slice());
