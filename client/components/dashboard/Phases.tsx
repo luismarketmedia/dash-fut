@@ -122,7 +122,7 @@ export function PhasesSection() {
       <div className="space-y-8">
         {PHASES.map((p) => {
           const matches = matchesByPhase[p];
-          const weeks = chunkWeeks(matches);
+          const weeks = packWeeks(matches);
           return (
             <div key={p}>
               <div className="mb-2 flex items-center justify-between">
