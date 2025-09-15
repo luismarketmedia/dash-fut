@@ -610,18 +610,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       const rounds: [string, string][][] = [];
       let arr = ids.slice();
       for (let r = 0; r < n - 1; r++) {
-        const round: [string, string][] = [];
+        let round: [string, string][] = [];
         for (let i = 0; i < n / 2; i++) {
           const a = arr[i]!;
           const b = arr[n - 1 - i]!;
           if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
         }
+        // randomize order of games in this round
+        round = shuffle(round);
         rounds.push(round);
         // rotate all except first element
         const fixed = arr[0]!;
         const rest = arr.slice(1);
         rest.unshift(rest.pop()!);
         arr = [fixed, ...rest];
+      }
+      // If user expects number_of_teams rounds, add an extra round by swapping home/away of first round (keeps constraints, order randomized)
+      if (rounds.length < n) {
+        const extra = shuffle(
+          rounds[0]!.map(([a, b]) => [b, a] as [string, string]),
+        );
+        rounds.push(extra);
       }
       pairs = rounds.flat();
     } else {
