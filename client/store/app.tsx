@@ -67,6 +67,7 @@ interface State {
   teams: Team[];
   assignments: Assignments; // result of last draw
   matches: Match[];
+  groups: Record<string, string>; // teamId -> group label (e.g., A, B)
 }
 
 const initialState: State = {
@@ -74,6 +75,7 @@ const initialState: State = {
   teams: [],
   assignments: {},
   matches: [],
+  groups: {},
 };
 
 // Helpers
@@ -120,6 +122,8 @@ type Action =
   | { type: "UPDATE_MATCH"; payload: Match }
   | { type: "DELETE_MATCH"; payload: { id: string } }
   | { type: "CLEAR_MATCHES" }
+  | { type: "SET_GROUPS"; payload: Record<string, string> }
+  | { type: "RESET_TEAMS_AND_PHASES" }
   | { type: "RESET_ALL" };
 
 function reducer(state: State, action: Action): State {
@@ -210,6 +214,12 @@ function reducer(state: State, action: Action): State {
     case "CLEAR_MATCHES": {
       return { ...state, matches: [] };
     }
+    case "SET_GROUPS": {
+      return { ...state, groups: action.payload };
+    }
+    case "RESET_TEAMS_AND_PHASES": {
+      return { ...state, assignments: {}, matches: [], groups: {} };
+    }
     case "RESET_ALL":
       return initialState;
     default:
@@ -220,7 +230,7 @@ function reducer(state: State, action: Action): State {
 const AppContext = createContext<{
   state: State;
   dispatch: React.Dispatch<Action>;
-  drawTeams: () => void;
+  drawTeams: (paidOnly?: boolean) => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
   generateEliminationFromStandings: (
     phase: Exclude<Phase, "Classificação">,
@@ -521,11 +531,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         case "RESET_ALL": {
           await Promise.all([
-            supabase.from("match_events").delete().neq("match_id", ""),
-            supabase.from("assignments").delete().neq("team_id", ""),
-            supabase.from("matches").delete().neq("id", ""),
-            supabase.from("players").delete().neq("id", ""),
-            supabase.from("teams").delete().neq("id", ""),
+            supabase
+              .from("match_events")
+              .delete()
+              .neq("match_id", "")
+              .throwOnError(),
+            supabase
+              .from("assignments")
+              .delete()
+              .neq("team_id", "")
+              .throwOnError(),
+            supabase.from("matches").delete().neq("id", "").throwOnError(),
+            supabase.from("players").delete().neq("id", "").throwOnError(),
+            supabase.from("teams").delete().neq("id", "").throwOnError(),
+          ]);
+          break;
+        }
+        case "RESET_TEAMS_AND_PHASES": {
+          await Promise.all([
+            supabase
+              .from("match_events")
+              .delete()
+              .neq("match_id", "")
+              .throwOnError(),
+            supabase
+              .from("assignments")
+              .delete()
+              .neq("team_id", "")
+              .throwOnError(),
+            supabase.from("matches").delete().neq("id", "").throwOnError(),
           ]);
           break;
         }
@@ -558,33 +592,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.matches]);
 
-  const drawTeams = () => {
+  const drawTeams = (paidOnly?: boolean) => {
     const teams = state.teams;
-    const players = state.players;
+    const allPlayers = paidOnly
+      ? state.players.filter((p) => p.paid)
+      : state.players;
     if (teams.length === 0) return;
-
-    const gks = players.filter((p) => p.position === "GOL");
-    const others = players.filter((p) => p.position !== "GOL");
 
     const result: Assignments = Object.fromEntries(
       teams.map((t) => [t.id, [] as string[]]),
     );
+    const used = new Set<string>();
 
-    const shuffledGk = shuffle(gks);
-    teams.forEach((team, idx) => {
-      const gk = shuffledGk[idx];
-      if (gk) result[team.id].push(gk.id);
+    const basePositions: Position[] = [
+      "GOL",
+      "FIXO",
+      "MEIO",
+      "ALA DIREITA",
+      "ALA ESQUERDA",
+      "FRENTE",
+    ];
+
+    const byPos: Record<Position, Player[]> = {
+      GOL: [],
+      FIXO: [],
+      MEIO: [],
+      "ALA DIREITA": [],
+      "ALA ESQUERDA": [],
+      FRENTE: [],
+    };
+    for (const p of allPlayers) {
+      (byPos[p.position] ||= []).push(p);
+    }
+    for (const pos of basePositions) byPos[pos] = shuffle(byPos[pos] || []);
+
+    const posPtr: Record<Position, number> = {
+      GOL: 0,
+      FIXO: 0,
+      MEIO: 0,
+      "ALA DIREITA": 0,
+      "ALA ESQUERDA": 0,
+      FRENTE: 0,
+    };
+
+    const targetPerTeam: Record<string, number> = {};
+    for (const t of teams) {
+      targetPerTeam[t.id] = Math.min(t.capacity, basePositions.length + 2);
+    }
+
+    // Assign mandatory roles: 1 per position per team when available
+    basePositions.forEach((pos, posIndex) => {
+      const pool = byPos[pos];
+      let i = posPtr[pos];
+      for (let j = 0; j < teams.length; j++) {
+        const team = teams[(j + posIndex) % teams.length]!;
+        if ((result[team.id]?.length || 0) >= targetPerTeam[team.id]) continue;
+        while (i < pool.length && used.has(pool[i]!.id)) i++;
+        if (i >= pool.length) break;
+        const player = pool[i]!;
+        result[team.id].push(player.id);
+        used.add(player.id);
+        i++;
+      }
+      posPtr[pos] = i;
     });
 
-    const cap = (t: Team) => t.capacity;
-    const pool = shuffle(others.concat(shuffledGk.slice(teams.length)));
+    // Reserves: fill remaining slots with non-goalkeepers only
+    const reservesPool = shuffle(
+      allPlayers.filter((p) => p.position !== "GOL" && !used.has(p.id)),
+    );
     let ti = 0;
-    for (const p of pool) {
+    for (const p of reservesPool) {
       let attempts = 0;
       while (attempts < teams.length) {
-        const team = teams[ti % teams.length];
-        if (result[team.id].length < cap(team)) {
+        const team = teams[ti % teams.length]!;
+        if ((result[team.id]?.length || 0) < targetPerTeam[team.id]) {
           result[team.id].push(p.id);
+          used.add(p.id);
           ti++;
           break;
         } else {
@@ -607,35 +691,123 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     let pairs: [string, string][] = [];
 
     if (phase === "Classificação") {
-      const ids = shuffle(teamIds.slice());
-      if (ids.length % 2 !== 0) ids.push("_BYE_");
-      const n = ids.length;
-      const rounds: [string, string][][] = [];
-      let arr = ids.slice();
-      for (let r = 0; r < n - 1; r++) {
-        let round: [string, string][] = [];
-        for (let i = 0; i < n / 2; i++) {
-          const a = arr[i]!;
-          const b = arr[n - 1 - i]!;
-          if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
-        }
-        // randomize order of games in this round
-        round = shuffle(round);
-        rounds.push(round);
-        // rotate all except first element
-        const fixed = arr[0]!;
-        const rest = arr.slice(1);
-        rest.unshift(rest.pop()!);
-        arr = [fixed, ...rest];
-      }
-      // If user expects number_of_teams rounds, add an extra round by swapping home/away of first round (keeps constraints, order randomized)
-      if (rounds.length < n) {
-        const extra = shuffle(
-          rounds[0]!.map(([a, b]) => [b, a] as [string, string]),
+      // Remove existing matches for this phase
+      state.matches
+        .filter((m) => m.phase === phase)
+        .forEach((m) =>
+          baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }),
         );
-        rounds.push(extra);
+
+      // Seed by current standings (Pts, SG, GF, name) using only previous Classificação games
+      const stats = new Map<
+        string,
+        {
+          teamId: string;
+          name: string;
+          color: string;
+          Pts: number;
+          SG: number;
+          GF: number;
+        }
+      >();
+      for (const t of state.teams)
+        stats.set(t.id, {
+          teamId: t.id,
+          name: t.name,
+          color: t.color,
+          Pts: 0,
+          SG: 0,
+          GF: 0,
+        });
+      const goalsFor = (teamId: string, match: Match) => {
+        const ids = state.assignments[teamId] || [];
+        let s = 0;
+        for (const pid of ids) {
+          const ev = match.events[pid];
+          if (ev) s += ev.goals;
+        }
+        return s;
+      };
+      for (const m of state.matches.filter(
+        (m) => m.phase === "Classificação",
+      )) {
+        const A = stats.get(m.leftTeamId);
+        const B = stats.get(m.rightTeamId);
+        if (!A || !B) continue;
+        const ga = goalsFor(A.teamId, m);
+        const gb = goalsFor(B.teamId, m);
+        A.GF += ga;
+        B.GF += gb;
+        A.SG += ga - gb;
+        B.SG += gb - ga;
+        if (ga > gb) A.Pts += 3;
+        else if (ga < gb) B.Pts += 3;
+        else {
+          A.Pts += 1;
+          B.Pts += 1;
+        }
       }
-      pairs = rounds.flat();
+      const table = Array.from(stats.values()).sort(
+        (a, b) =>
+          b.Pts - a.Pts ||
+          b.SG - a.SG ||
+          b.GF - a.GF ||
+          a.name.localeCompare(b.name),
+      );
+      const seeds = table.map((r) => r.teamId);
+
+      // Build exactly groups of up to 4 via snake seeding; with 8 teams => 2 chaves de 4
+      const groupsCount = Math.max(1, Math.ceil(seeds.length / 4));
+      const groups: string[][] = Array.from({ length: groupsCount }, () => []);
+      let idx = 0;
+      // Row 1 (ascending)
+      for (let g = 0; g < groupsCount && idx < seeds.length; g++)
+        groups[g].push(seeds[idx++]!);
+      // Row 2 (descending)
+      for (let g = groupsCount - 1; g >= 0 && idx < seeds.length; g--)
+        groups[g].push(seeds[idx++]!);
+      // Row 3 (ascending)
+      for (let g = 0; g < groupsCount && idx < seeds.length; g++)
+        groups[g].push(seeds[idx++]!);
+      // Row 4 (descending)
+      for (let g = groupsCount - 1; g >= 0 && idx < seeds.length; g--)
+        groups[g].push(seeds[idx++]!);
+
+      // Persist groups mapping (A, B, C...)
+      const groupLabels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const groupMap: Record<string, string> = {};
+      for (let g = 0; g < groups.length; g++) {
+        const label = groupLabels[g] || String(g + 1);
+        for (const t of groups[g]) groupMap[t] = label;
+      }
+      dispatch({ type: "SET_GROUPS", payload: groupMap });
+
+      // Round-robin inside each group
+      const allPairs: [string, string][][] = [];
+      for (const g of groups) {
+        if (g.length < 2) continue;
+        const ids = g.slice();
+        if (ids.length % 2 !== 0) ids.push("_BYE_");
+        const n = ids.length;
+        const rounds: [string, string][][] = [];
+        let arr = ids.slice();
+        for (let r = 0; r < n - 1; r++) {
+          let round: [string, string][] = [];
+          for (let i = 0; i < n / 2; i++) {
+            const a = arr[i]!;
+            const b = arr[n - 1 - i]!;
+            if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
+          }
+          round = shuffle(round);
+          rounds.push(round);
+          const fixed = arr[0]!;
+          const rest = arr.slice(1);
+          rest.unshift(rest.pop()!);
+          arr = [fixed, ...rest];
+        }
+        allPairs.push(rounds.flat());
+      }
+      pairs = allPairs.flat();
     } else {
       // Elimination: pair sequentially based on provided order (can be seeded externally)
       const ids = teamIds.slice();
@@ -674,12 +846,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             : "NEXT_PUBLIC_QUALIFIERS_FINAL";
     const raw = (process.env as any)[key];
     const n = raw ? parseInt(String(raw), 10) : NaN;
-    if (Number.isFinite(n) && n > 1) return Math.min(n, totalTeams);
-    // Fallback: default to all teams available for first KO, else standard sizes
-    if (phase === "Oitavas") return totalTeams;
-    if (phase === "Quartas") return Math.min(8, totalTeams);
-    if (phase === "Semifinal") return Math.min(4, totalTeams);
-    return Math.min(2, totalTeams);
+    let base: number;
+    if (Number.isFinite(n) && n > 1) base = Math.min(n, totalTeams);
+    else if (phase === "Oitavas") base = Math.min(16, totalTeams);
+    else if (phase === "Quartas") base = Math.min(8, totalTeams);
+    else if (phase === "Semifinal") base = Math.min(4, totalTeams);
+    else base = Math.min(2, totalTeams);
+
+    if (phase === "Oitavas" || phase === "Quartas") {
+      if (base < 4) return base;
+      // Enforce groups of 4 logic
+      const coerced = base - (base % 4);
+      return Math.max(4, Math.min(coerced, totalTeams));
+    }
+    return base;
   }
 
   function generateEliminationFromStandings(
@@ -688,6 +868,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const totalTeams = state.teams.length;
     const qualifiers = getQualifiersForPhase(phase, totalTeams);
 
+    // Build standings but only from Classificação games
     const stats = new Map<
       string,
       {
@@ -719,7 +900,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       return s;
     };
 
-    for (const m of state.matches) {
+    for (const m of state.matches.filter((m) => m.phase === "Classificação")) {
       const A = stats.get(m.leftTeamId);
       const B = stats.get(m.rightTeamId);
       if (!A || !B) continue;
@@ -737,39 +918,82 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
-    const table = Array.from(stats.values()).sort(
-      (a, b) =>
-        b.Pts - a.Pts ||
-        b.SG - a.SG ||
-        b.GF - a.GF ||
-        a.name.localeCompare(b.name),
-    );
-    const seeds = table
-      .slice(0, Math.min(qualifiers, table.length))
-      .map((r) => r.teamId);
-
-    const isPowerOfTwo = (x: number) => (x & (x - 1)) === 0;
-    const pairs: [string, string][] = [];
-
-    if (isPowerOfTwo(seeds.length)) {
-      let i = 0,
-        j = seeds.length - 1;
-      while (i < j) {
-        pairs.push([seeds[i]!, seeds[j]!] as [string, string]);
-        i++;
-        j--;
+    let seeds: string[] = [];
+    if (phase === "Quartas" && Object.keys(state.groups).length) {
+      // Pick top 2 from each group
+      const groups: Record<
+        string,
+        { teamId: string; Pts: number; SG: number; GF: number; name: string }[]
+      > = {};
+      for (const [teamId, label] of Object.entries(state.groups)) {
+        const s = stats.get(teamId)!;
+        if (!groups[label]) groups[label] = [];
+        groups[label].push({
+          teamId: s.teamId,
+          Pts: s.Pts,
+          SG: s.SG,
+          GF: s.GF,
+          name: s.name,
+        });
+      }
+      const labels = Object.keys(groups).sort();
+      const qualifiersPerGroup: string[][] = [];
+      for (const label of labels) {
+        const sorted = groups[label].sort(
+          (a, b) =>
+            b.Pts - a.Pts ||
+            b.SG - a.SG ||
+            b.GF - a.GF ||
+            a.name.localeCompare(b.name),
+        );
+        qualifiersPerGroup.push(sorted.slice(0, 2).map((x) => x.teamId));
+      }
+      // Cross: 1A vs 2B, 1B vs 2A if exactly two groups, else flatten by groups order
+      if (qualifiersPerGroup.length === 2) {
+        const [A, B] = qualifiersPerGroup;
+        seeds = [A[0], B[1], B[0], A[1]].filter(Boolean) as string[];
+      } else {
+        seeds = qualifiersPerGroup.flat();
       }
     } else {
-      const target = 1 << Math.floor(Math.log2(seeds.length));
-      const byes = 2 * target - seeds.length;
-      const playIn = seeds.slice(byes);
-      const randomized = shuffle(playIn.slice());
-      for (let i = 0; i + 1 < randomized.length; i += 2) {
-        pairs.push([randomized[i]!, randomized[i + 1]!] as [string, string]);
+      const table = Array.from(stats.values()).sort(
+        (a, b) =>
+          b.Pts - a.Pts ||
+          b.SG - a.SG ||
+          b.GF - a.GF ||
+          a.name.localeCompare(b.name),
+      );
+      seeds = table
+        .slice(0, Math.min(qualifiers, table.length))
+        .map((r) => r.teamId);
+    }
+
+    const pairs: [string, string][] = [];
+
+    if (seeds.length >= 4 && seeds.length % 4 === 0) {
+      const groupsCount = seeds.length / 4;
+      const groups: string[][] = Array.from({ length: groupsCount }, () => []);
+      // Snake seeding across groups of 4
+      for (let g = 0; g < groupsCount; g++) groups[g].push(seeds[g]!);
+      for (let g = 0; g < groupsCount; g++)
+        groups[groupsCount - 1 - g].push(seeds[groupsCount + g]!);
+      for (let g = 0; g < groupsCount; g++)
+        groups[g].push(seeds[2 * groupsCount + g]!);
+      for (let g = 0; g < groupsCount; g++)
+        groups[groupsCount - 1 - g].push(seeds[3 * groupsCount + g]!);
+
+      for (const group of groups) {
+        if (group.length === 4) {
+          pairs.push([group[0]!, group[3]!] as [string, string]);
+          pairs.push([group[1]!, group[2]!] as [string, string]);
+        }
+      }
+    } else {
+      for (let i = 0; i + 1 < seeds.length; i += 2) {
+        pairs.push([seeds[i]!, seeds[i + 1]!] as [string, string]);
       }
     }
 
-    // Remove existing matches for this phase to avoid leftovers when qualifiers change
     state.matches
       .filter((m) => m.phase === phase)
       .forEach((m) =>
@@ -930,8 +1154,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const resetDrawAndPhases = () => {
-    dispatch({ type: "SET_ASSIGNMENTS", payload: {} });
-    if (state.matches.length) dispatch({ type: "CLEAR_MATCHES" });
+    dispatch({ type: "RESET_TEAMS_AND_PHASES" });
   };
 
   const value = useMemo(
@@ -1005,20 +1228,28 @@ function buildMockState(): State {
     "FRENTE",
   ];
 
-  const players: Player[] = Array.from({ length: 64 }, (_, i) => {
-    const idx = i + 1;
-    const isGK = i % 8 === 0; // 8 goleiros distribuídos
-    const pos: Position = isGK
-      ? "GOL"
-      : otherPositions[i % otherPositions.length]!;
-    return {
-      id: crypto.randomUUID(),
-      jerseyNumber: idx,
-      name: `Jogador ${idx}`,
-      position: pos,
-      paid: Math.random() < 0.6,
-    };
-  });
+  const positions: Position[] = [
+    "GOL",
+    "FIXO",
+    "MEIO",
+    "ALA DIREITA",
+    "ALA ESQUERDA",
+    "FRENTE",
+  ];
+  const players: Player[] = [];
+  let jersey = 1;
+  for (const pos of positions) {
+    for (let i = 0; i < 8; i++) {
+      players.push({
+        id: crypto.randomUUID(),
+        jerseyNumber: jersey,
+        name: `Jogador ${jersey}`,
+        position: pos,
+        paid: Math.random() < 0.6,
+      });
+      jersey++;
+    }
+  }
 
   const assignments: Assignments = Object.fromEntries(
     teams.map((t) => [t.id, [] as string[]]),

@@ -1,8 +1,11 @@
 import { useApp } from "@/store/app";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +21,7 @@ import {
 export function DrawSection() {
   const { state, drawTeams, resetDrawAndPhases } = useApp();
   const { teams, assignments, players } = state;
+  const [paidOnly, setPaidOnly] = useState(false);
 
   const hasAssignments = Object.values(assignments).some(
     (list) => (list?.length || 0) > 0,
@@ -34,6 +38,16 @@ export function DrawSection() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="paid-only"
+              checked={paidOnly}
+              onCheckedChange={setPaidOnly}
+            />
+            <Label htmlFor="paid-only" className="text-sm">
+              Apenas pagos
+            </Label>
+          </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" disabled={!canReset}>
@@ -44,8 +58,8 @@ export function DrawSection() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Resetar sorteio e fases?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Isso vai remover todas as distribuições de jogadores e todos
-                  os confrontos gerados. Jogadores e times serão mantidos.
+                  Isso vai apagar as fases no banco (confrontos e eventos) e
+                  limpar as distribuições. Times e jogadores serão mantidos.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -57,7 +71,7 @@ export function DrawSection() {
             </AlertDialogContent>
           </AlertDialog>
           <Button
-            onClick={drawTeams}
+            onClick={() => drawTeams(paidOnly)}
             disabled={teams.length === 0 || players.length === 0}
           >
             Sortear
@@ -85,7 +99,7 @@ export function DrawSection() {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-48 pr-3">
+                  <ScrollArea className="h-72 pr-3">
                     <ul className="space-y-2">
                       {ids.map((pid) => {
                         const p = players.find((pp) => pp.id === pid);
