@@ -263,7 +263,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const shouldSeed =
       !hasSupabase && (!ls.players?.length || !ls.teams?.length);
     const payload = shouldSeed ? buildMockState() : ls;
-    baseDispatch({ type: "HYDRATE", payload: { ...payload, groups: (payload as any).groups || {} } });
+    baseDispatch({
+      type: "HYDRATE",
+      payload: { ...payload, groups: (payload as any).groups || {} },
+    });
     hydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
