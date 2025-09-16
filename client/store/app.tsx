@@ -1080,20 +1080,28 @@ function buildMockState(): State {
     "FRENTE",
   ];
 
-  const players: Player[] = Array.from({ length: 64 }, (_, i) => {
-    const idx = i + 1;
-    const isGK = i % 8 === 0; // 8 goleiros distribuídos
-    const pos: Position = isGK
-      ? "GOL"
-      : otherPositions[i % otherPositions.length]!;
-    return {
-      id: crypto.randomUUID(),
-      jerseyNumber: idx,
-      name: `Jogador ${idx}`,
-      position: pos,
-      paid: Math.random() < 0.6,
-    };
-  });
+  const positions: Position[] = [
+    "GOL",
+    "FIXO",
+    "MEIO",
+    "ALA DIREITA",
+    "ALA ESQUERDA",
+    "FRENTE",
+  ];
+  const players: Player[] = [];
+  let jersey = 1;
+  for (const pos of positions) {
+    for (let i = 0; i < 8; i++) {
+      players.push({
+        id: crypto.randomUUID(),
+        jerseyNumber: jersey,
+        name: `Jogador ${jersey}`,
+        position: pos,
+        paid: Math.random() < 0.6,
+      });
+      jersey++;
+    }
+  }
 
   const assignments: Assignments = Object.fromEntries(
     teams.map((t) => [t.id, [] as string[]]),
