@@ -67,6 +67,7 @@ interface State {
   teams: Team[];
   assignments: Assignments; // result of last draw
   matches: Match[];
+  groups: Record<string, string>; // teamId -> group label (e.g., A, B)
 }
 
 const initialState: State = {
@@ -74,6 +75,7 @@ const initialState: State = {
   teams: [],
   assignments: {},
   matches: [],
+  groups: {},
 };
 
 // Helpers
@@ -120,6 +122,7 @@ type Action =
   | { type: "UPDATE_MATCH"; payload: Match }
   | { type: "DELETE_MATCH"; payload: { id: string } }
   | { type: "CLEAR_MATCHES" }
+  | { type: "SET_GROUPS"; payload: Record<string, string> }
   | { type: "RESET_TEAMS_AND_PHASES" }
   | { type: "RESET_ALL" };
 
@@ -211,8 +214,11 @@ function reducer(state: State, action: Action): State {
     case "CLEAR_MATCHES": {
       return { ...state, matches: [] };
     }
+    case "SET_GROUPS": {
+      return { ...state, groups: action.payload };
+    }
     case "RESET_TEAMS_AND_PHASES": {
-      return { ...state, assignments: {}, matches: [] };
+      return { ...state, assignments: {}, matches: [], groups: {} };
     }
     case "RESET_ALL":
       return initialState;
@@ -672,7 +678,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         .filter((m) => m.phase === phase)
         .forEach((m) => baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }));
 
-      // Seed by current standings (Pts, SG, GF, name)
+      // Seed by current standings (Pts, SG, GF, name) using only previous Classificação games
       const stats = new Map<
         string,
         { teamId: string; name: string; color: string; Pts: number; SG: number; GF: number }
@@ -688,7 +694,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         return s;
       };
-      for (const m of state.matches) {
+      for (const m of state.matches.filter((m) => m.phase === "Classificação")) {
         const A = stats.get(m.leftTeamId);
         const B = stats.get(m.rightTeamId);
         if (!A || !B) continue;
@@ -710,7 +716,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       const seeds = table.map((r) => r.teamId);
 
-      // Build groups of up to 4 via snake seeding; with 8 teams => 2 chaves de 4
+      // Build exactly groups of up to 4 via snake seeding; with 8 teams => 2 chaves de 4
       const groupsCount = Math.max(1, Math.ceil(seeds.length / 4));
       const groups: string[][] = Array.from({ length: groupsCount }, () => []);
       let idx = 0;
@@ -722,6 +728,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       for (let g = 0; g < groupsCount && idx < seeds.length; g++) groups[g].push(seeds[idx++]!);
       // Row 4 (descending)
       for (let g = groupsCount - 1; g >= 0 && idx < seeds.length; g--) groups[g].push(seeds[idx++]!);
+
+      // Persist groups mapping (A, B, C...)
+      const groupLabels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const groupMap: Record<string, string> = {};
+      for (let g = 0; g < groups.length; g++) {
+        const label = groupLabels[g] || String(g + 1);
+        for (const t of groups[g]) groupMap[t] = label;
+      }
+      dispatch({ type: "SET_GROUPS", payload: groupMap });
 
       // Round-robin inside each group
       const allPairs: [string, string][][] = [];
@@ -809,6 +824,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const totalTeams = state.teams.length;
     const qualifiers = getQualifiersForPhase(phase, totalTeams);
 
+    // Build standings but only from Classificação games
     const stats = new Map<
       string,
       {
@@ -840,7 +856,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       return s;
     };
 
-    for (const m of state.matches) {
+    for (const m of state.matches.filter((m) => m.phase === "Classificação")) {
       const A = stats.get(m.leftTeamId);
       const B = stats.get(m.rightTeamId);
       if (!A || !B) continue;
@@ -858,16 +874,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
-    const table = Array.from(stats.values()).sort(
-      (a, b) =>
-        b.Pts - a.Pts ||
-        b.SG - a.SG ||
-        b.GF - a.GF ||
-        a.name.localeCompare(b.name),
-    );
-    const seeds = table
-      .slice(0, Math.min(qualifiers, table.length))
-      .map((r) => r.teamId);
+    let seeds: string[] = [];
+    if (phase === "Quartas" && Object.keys(state.groups).length) {
+      // Pick top 2 from each group
+      const groups: Record<string, { teamId: string; Pts: number; SG: number; GF: number; name: string }[]> = {};
+      for (const [teamId, label] of Object.entries(state.groups)) {
+        const s = stats.get(teamId)!;
+        if (!groups[label]) groups[label] = [];
+        groups[label].push({ teamId: s.teamId, Pts: s.Pts, SG: s.SG, GF: s.GF, name: s.name });
+      }
+      const labels = Object.keys(groups).sort();
+      const qualifiersPerGroup: string[][] = [];
+      for (const label of labels) {
+        const sorted = groups[label].sort((a, b) => b.Pts - a.Pts || b.SG - a.SG || b.GF - a.GF || a.name.localeCompare(b.name));
+        qualifiersPerGroup.push(sorted.slice(0, 2).map((x) => x.teamId));
+      }
+      // Cross: 1A vs 2B, 1B vs 2A if exactly two groups, else flatten by groups order
+      if (qualifiersPerGroup.length === 2) {
+        const [A, B] = qualifiersPerGroup;
+        seeds = [A[0], B[1], B[0], A[1]].filter(Boolean) as string[];
+      } else {
+        seeds = qualifiersPerGroup.flat();
+      }
+    } else {
+      const table = Array.from(stats.values()).sort(
+        (a, b) =>
+          b.Pts - a.Pts ||
+          b.SG - a.SG ||
+          b.GF - a.GF ||
+          a.name.localeCompare(b.name),
+      );
+      seeds = table
+        .slice(0, Math.min(qualifiers, table.length))
+        .map((r) => r.teamId);
+    }
 
     const pairs: [string, string][] = [];
 
@@ -875,30 +915,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       const groupsCount = seeds.length / 4;
       const groups: string[][] = Array.from({ length: groupsCount }, () => []);
       // Snake seeding across groups of 4
-      // Row 1 (ascending)
       for (let g = 0; g < groupsCount; g++) groups[g].push(seeds[g]!);
-      // Row 2 (descending)
       for (let g = 0; g < groupsCount; g++) groups[groupsCount - 1 - g].push(seeds[groupsCount + g]!);
-      // Row 3 (ascending)
       for (let g = 0; g < groupsCount; g++) groups[g].push(seeds[2 * groupsCount + g]!);
-      // Row 4 (descending)
       for (let g = 0; g < groupsCount; g++) groups[groupsCount - 1 - g].push(seeds[3 * groupsCount + g]!);
 
       for (const group of groups) {
         if (group.length === 4) {
-          // Pair inside each chave: (1 vs 4) and (2 vs 3)
           pairs.push([group[0]!, group[3]!] as [string, string]);
           pairs.push([group[1]!, group[2]!] as [string, string]);
         }
       }
     } else {
-      // Fallback: pair sequentially
       for (let i = 0; i + 1 < seeds.length; i += 2) {
         pairs.push([seeds[i]!, seeds[i + 1]!] as [string, string]);
       }
     }
 
-    // Remove existing matches for this phase to avoid leftovers when qualifiers change
     state.matches
       .filter((m) => m.phase === phase)
       .forEach((m) =>
