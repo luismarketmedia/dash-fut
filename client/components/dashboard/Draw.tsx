@@ -52,8 +52,8 @@ export function DrawSection() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Resetar sorteio e fases?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Isso vai apagar times e fases no banco (confrontos e eventos),
-                  além de limpar as distribuições locais. Jogadores serão mantidos.
+                  Isso vai apagar as fases no banco (confrontos e eventos)
+                  e limpar as distribuições. Times e jogadores serão mantidos.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
