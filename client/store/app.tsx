@@ -667,35 +667,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     let pairs: [string, string][] = [];
 
     if (phase === "Classificação") {
-      const ids = shuffle(teamIds.slice());
-      if (ids.length % 2 !== 0) ids.push("_BYE_");
-      const n = ids.length;
-      const rounds: [string, string][][] = [];
-      let arr = ids.slice();
-      for (let r = 0; r < n - 1; r++) {
-        let round: [string, string][] = [];
-        for (let i = 0; i < n / 2; i++) {
-          const a = arr[i]!;
-          const b = arr[n - 1 - i]!;
-          if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
+      // Remove existing matches for this phase
+      state.matches
+        .filter((m) => m.phase === phase)
+        .forEach((m) => baseDispatch({ type: "DELETE_MATCH", payload: { id: m.id } }));
+
+      // Seed by current standings (Pts, SG, GF, name)
+      const stats = new Map<
+        string,
+        { teamId: string; name: string; color: string; Pts: number; SG: number; GF: number }
+      >();
+      for (const t of state.teams)
+        stats.set(t.id, { teamId: t.id, name: t.name, color: t.color, Pts: 0, SG: 0, GF: 0 });
+      const goalsFor = (teamId: string, match: Match) => {
+        const ids = state.assignments[teamId] || [];
+        let s = 0;
+        for (const pid of ids) {
+          const ev = match.events[pid];
+          if (ev) s += ev.goals;
         }
-        // randomize order of games in this round
-        round = shuffle(round);
-        rounds.push(round);
-        // rotate all except first element
-        const fixed = arr[0]!;
-        const rest = arr.slice(1);
-        rest.unshift(rest.pop()!);
-        arr = [fixed, ...rest];
+        return s;
+      };
+      for (const m of state.matches) {
+        const A = stats.get(m.leftTeamId);
+        const B = stats.get(m.rightTeamId);
+        if (!A || !B) continue;
+        const ga = goalsFor(A.teamId, m);
+        const gb = goalsFor(B.teamId, m);
+        A.GF += ga;
+        B.GF += gb;
+        A.SG += ga - gb;
+        B.SG += gb - ga;
+        if (ga > gb) A.Pts += 3;
+        else if (ga < gb) B.Pts += 3;
+        else {
+          A.Pts += 1;
+          B.Pts += 1;
+        }
       }
-      // If user expects number_of_teams rounds, add an extra round by swapping home/away of first round (keeps constraints, order randomized)
-      if (rounds.length < n) {
-        const extra = shuffle(
-          rounds[0]!.map(([a, b]) => [b, a] as [string, string]),
-        );
-        rounds.push(extra);
+      const table = Array.from(stats.values()).sort(
+        (a, b) => b.Pts - a.Pts || b.SG - a.SG || b.GF - a.GF || a.name.localeCompare(b.name),
+      );
+      const seeds = table.map((r) => r.teamId);
+
+      // Build groups of up to 4 via snake seeding; with 8 teams => 2 chaves de 4
+      const groupsCount = Math.max(1, Math.ceil(seeds.length / 4));
+      const groups: string[][] = Array.from({ length: groupsCount }, () => []);
+      let idx = 0;
+      // Row 1 (ascending)
+      for (let g = 0; g < groupsCount && idx < seeds.length; g++) groups[g].push(seeds[idx++]!);
+      // Row 2 (descending)
+      for (let g = groupsCount - 1; g >= 0 && idx < seeds.length; g--) groups[g].push(seeds[idx++]!);
+      // Row 3 (ascending)
+      for (let g = 0; g < groupsCount && idx < seeds.length; g++) groups[g].push(seeds[idx++]!);
+      // Row 4 (descending)
+      for (let g = groupsCount - 1; g >= 0 && idx < seeds.length; g--) groups[g].push(seeds[idx++]!);
+
+      // Round-robin inside each group
+      const allPairs: [string, string][][] = [];
+      for (const g of groups) {
+        if (g.length < 2) continue;
+        const ids = g.slice();
+        if (ids.length % 2 !== 0) ids.push("_BYE_");
+        const n = ids.length;
+        const rounds: [string, string][][] = [];
+        let arr = ids.slice();
+        for (let r = 0; r < n - 1; r++) {
+          let round: [string, string][] = [];
+          for (let i = 0; i < n / 2; i++) {
+            const a = arr[i]!;
+            const b = arr[n - 1 - i]!;
+            if (a !== "_BYE_" && b !== "_BYE_") round.push([a, b]);
+          }
+          round = shuffle(round);
+          rounds.push(round);
+          const fixed = arr[0]!;
+          const rest = arr.slice(1);
+          rest.unshift(rest.pop()!);
+          arr = [fixed, ...rest];
+        }
+        allPairs.push(rounds.flat());
       }
-      pairs = rounds.flat();
+      pairs = allPairs.flat();
     } else {
       // Elimination: pair sequentially based on provided order (can be seeded externally)
       const ids = teamIds.slice();
