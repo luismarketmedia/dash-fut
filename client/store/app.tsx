@@ -120,6 +120,7 @@ type Action =
   | { type: "UPDATE_MATCH"; payload: Match }
   | { type: "DELETE_MATCH"; payload: { id: string } }
   | { type: "CLEAR_MATCHES" }
+  | { type: "RESET_TEAMS_AND_PHASES" }
   | { type: "RESET_ALL" };
 
 function reducer(state: State, action: Action): State {
@@ -209,6 +210,9 @@ function reducer(state: State, action: Action): State {
     }
     case "CLEAR_MATCHES": {
       return { ...state, matches: [] };
+    }
+    case "RESET_TEAMS_AND_PHASES": {
+      return { ...state, teams: [], assignments: {}, matches: [] };
     }
     case "RESET_ALL":
       return initialState;
@@ -521,11 +525,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         case "RESET_ALL": {
           await Promise.all([
-            supabase.from("match_events").delete().neq("match_id", ""),
-            supabase.from("assignments").delete().neq("team_id", ""),
-            supabase.from("matches").delete().neq("id", ""),
-            supabase.from("players").delete().neq("id", ""),
-            supabase.from("teams").delete().neq("id", ""),
+            supabase.from("match_events").delete().neq("match_id", "").throwOnError(),
+            supabase.from("assignments").delete().neq("team_id", "").throwOnError(),
+            supabase.from("matches").delete().neq("id", "").throwOnError(),
+            supabase.from("players").delete().neq("id", "").throwOnError(),
+            supabase.from("teams").delete().neq("id", "").throwOnError(),
+          ]);
+          break;
+        }
+        case "RESET_TEAMS_AND_PHASES": {
+          await Promise.all([
+            supabase.from("match_events").delete().neq("match_id", "").throwOnError(),
+            supabase.from("assignments").delete().neq("team_id", "").throwOnError(),
+            supabase.from("matches").delete().neq("id", "").throwOnError(),
+            supabase.from("teams").delete().neq("id", "").throwOnError(),
           ]);
           break;
         }
@@ -978,8 +991,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const resetDrawAndPhases = () => {
-    dispatch({ type: "SET_ASSIGNMENTS", payload: {} });
-    if (state.matches.length) dispatch({ type: "CLEAR_MATCHES" });
+    dispatch({ type: "RESET_TEAMS_AND_PHASES" });
   };
 
   const value = useMemo(
