@@ -39,8 +39,14 @@ export function DrawSection() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
-            <Switch id="paid-only" checked={paidOnly} onCheckedChange={setPaidOnly} />
-            <Label htmlFor="paid-only" className="text-sm">Apenas pagos</Label>
+            <Switch
+              id="paid-only"
+              checked={paidOnly}
+              onCheckedChange={setPaidOnly}
+            />
+            <Label htmlFor="paid-only" className="text-sm">
+              Apenas pagos
+            </Label>
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -52,8 +58,8 @@ export function DrawSection() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Resetar sorteio e fases?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Isso vai apagar as fases no banco (confrontos e eventos)
-                  e limpar as distribuições. Times e jogadores serão mantidos.
+                  Isso vai apagar as fases no banco (confrontos e eventos) e
+                  limpar as distribuições. Times e jogadores serão mantidos.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
