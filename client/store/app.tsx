@@ -734,12 +734,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             : "NEXT_PUBLIC_QUALIFIERS_FINAL";
     const raw = (process.env as any)[key];
     const n = raw ? parseInt(String(raw), 10) : NaN;
-    if (Number.isFinite(n) && n > 1) return Math.min(n, totalTeams);
-    // Fallback: default to all teams available for first KO, else standard sizes
-    if (phase === "Oitavas") return totalTeams;
-    if (phase === "Quartas") return Math.min(8, totalTeams);
-    if (phase === "Semifinal") return Math.min(4, totalTeams);
-    return Math.min(2, totalTeams);
+    let base: number;
+    if (Number.isFinite(n) && n > 1) base = Math.min(n, totalTeams);
+    else if (phase === "Oitavas") base = Math.min(16, totalTeams);
+    else if (phase === "Quartas") base = Math.min(8, totalTeams);
+    else if (phase === "Semifinal") base = Math.min(4, totalTeams);
+    else base = Math.min(2, totalTeams);
+
+    if (phase === "Oitavas" || phase === "Quartas") {
+      if (base < 4) return base;
+      // Enforce groups of 4 logic
+      const coerced = base - (base % 4);
+      return Math.max(4, Math.min(coerced, totalTeams));
+    }
+    return base;
   }
 
   function generateEliminationFromStandings(
@@ -808,24 +816,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       .slice(0, Math.min(qualifiers, table.length))
       .map((r) => r.teamId);
 
-    const isPowerOfTwo = (x: number) => (x & (x - 1)) === 0;
     const pairs: [string, string][] = [];
 
-    if (isPowerOfTwo(seeds.length)) {
-      let i = 0,
-        j = seeds.length - 1;
-      while (i < j) {
-        pairs.push([seeds[i]!, seeds[j]!] as [string, string]);
-        i++;
-        j--;
+    if (seeds.length >= 4 && seeds.length % 4 === 0) {
+      const groupsCount = seeds.length / 4;
+      const groups: string[][] = Array.from({ length: groupsCount }, () => []);
+      // Snake seeding across groups of 4
+      // Row 1 (ascending)
+      for (let g = 0; g < groupsCount; g++) groups[g].push(seeds[g]!);
+      // Row 2 (descending)
+      for (let g = 0; g < groupsCount; g++) groups[groupsCount - 1 - g].push(seeds[groupsCount + g]!);
+      // Row 3 (ascending)
+      for (let g = 0; g < groupsCount; g++) groups[g].push(seeds[2 * groupsCount + g]!);
+      // Row 4 (descending)
+      for (let g = 0; g < groupsCount; g++) groups[groupsCount - 1 - g].push(seeds[3 * groupsCount + g]!);
+
+      for (const group of groups) {
+        if (group.length === 4) {
+          // Pair inside each chave: (1 vs 4) and (2 vs 3)
+          pairs.push([group[0]!, group[3]!] as [string, string]);
+          pairs.push([group[1]!, group[2]!] as [string, string]);
+        }
       }
     } else {
-      const target = 1 << Math.floor(Math.log2(seeds.length));
-      const byes = 2 * target - seeds.length;
-      const playIn = seeds.slice(byes);
-      const randomized = shuffle(playIn.slice());
-      for (let i = 0; i + 1 < randomized.length; i += 2) {
-        pairs.push([randomized[i]!, randomized[i + 1]!] as [string, string]);
+      // Fallback: pair sequentially
+      for (let i = 0; i + 1 < seeds.length; i += 2) {
+        pairs.push([seeds[i]!, seeds[i + 1]!] as [string, string]);
       }
     }
 
