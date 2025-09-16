@@ -85,7 +85,7 @@ export function DrawSection() {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-48 pr-3">
+                  <ScrollArea className="h-72 pr-3">
                     <ul className="space-y-2">
                       {ids.map((pid) => {
                         const p = players.find((pp) => pp.id === pid);

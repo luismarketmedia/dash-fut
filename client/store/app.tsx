@@ -560,31 +560,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const drawTeams = () => {
     const teams = state.teams;
-    const players = state.players;
+    const allPlayers = state.players;
     if (teams.length === 0) return;
-
-    const gks = players.filter((p) => p.position === "GOL");
-    const others = players.filter((p) => p.position !== "GOL");
 
     const result: Assignments = Object.fromEntries(
       teams.map((t) => [t.id, [] as string[]]),
     );
+    const used = new Set<string>();
 
-    const shuffledGk = shuffle(gks);
-    teams.forEach((team, idx) => {
-      const gk = shuffledGk[idx];
-      if (gk) result[team.id].push(gk.id);
+    const basePositions: Position[] = [
+      "GOL",
+      "FIXO",
+      "MEIO",
+      "ALA DIREITA",
+      "ALA ESQUERDA",
+      "FRENTE",
+    ];
+
+    const byPos: Record<Position, Player[]> = {
+      GOL: [],
+      FIXO: [],
+      MEIO: [],
+      "ALA DIREITA": [],
+      "ALA ESQUERDA": [],
+      FRENTE: [],
+    };
+    for (const p of allPlayers) {
+      (byPos[p.position] ||= []).push(p);
+    }
+    for (const pos of basePositions) byPos[pos] = shuffle(byPos[pos] || []);
+
+    const posPtr: Record<Position, number> = {
+      GOL: 0,
+      FIXO: 0,
+      MEIO: 0,
+      "ALA DIREITA": 0,
+      "ALA ESQUERDA": 0,
+      FRENTE: 0,
+    };
+
+    const targetPerTeam: Record<string, number> = {};
+    for (const t of teams) {
+      targetPerTeam[t.id] = Math.min(t.capacity, basePositions.length + 2);
+    }
+
+    // Assign mandatory roles: 1 per position per team when available
+    basePositions.forEach((pos, posIndex) => {
+      const pool = byPos[pos];
+      let i = posPtr[pos];
+      for (let j = 0; j < teams.length; j++) {
+        const team = teams[(j + posIndex) % teams.length]!;
+        if ((result[team.id]?.length || 0) >= targetPerTeam[team.id]) continue;
+        while (i < pool.length && used.has(pool[i]!.id)) i++;
+        if (i >= pool.length) break;
+        const player = pool[i]!;
+        result[team.id].push(player.id);
+        used.add(player.id);
+        i++;
+      }
+      posPtr[pos] = i;
     });
 
-    const cap = (t: Team) => t.capacity;
-    const pool = shuffle(others.concat(shuffledGk.slice(teams.length)));
+    // Reserves: fill remaining slots with non-goalkeepers only
+    const reservesPool = shuffle(
+      allPlayers.filter((p) => p.position !== "GOL" && !used.has(p.id)),
+    );
     let ti = 0;
-    for (const p of pool) {
+    for (const p of reservesPool) {
       let attempts = 0;
       while (attempts < teams.length) {
-        const team = teams[ti % teams.length];
-        if (result[team.id].length < cap(team)) {
+        const team = teams[ti % teams.length]!;
+        if ((result[team.id]?.length || 0) < targetPerTeam[team.id]) {
           result[team.id].push(p.id);
+          used.add(p.id);
           ti++;
           break;
         } else {
