@@ -212,7 +212,7 @@ function reducer(state: State, action: Action): State {
       return { ...state, matches: [] };
     }
     case "RESET_TEAMS_AND_PHASES": {
-      return { ...state, teams: [], assignments: {}, matches: [] };
+      return { ...state, assignments: {}, matches: [] };
     }
     case "RESET_ALL":
       return initialState;
@@ -538,7 +538,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             supabase.from("match_events").delete().neq("match_id", "").throwOnError(),
             supabase.from("assignments").delete().neq("team_id", "").throwOnError(),
             supabase.from("matches").delete().neq("id", "").throwOnError(),
-            supabase.from("teams").delete().neq("id", "").throwOnError(),
           ]);
           break;
         }
