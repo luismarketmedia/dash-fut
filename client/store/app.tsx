@@ -220,7 +220,7 @@ function reducer(state: State, action: Action): State {
 const AppContext = createContext<{
   state: State;
   dispatch: React.Dispatch<Action>;
-  drawTeams: () => void;
+  drawTeams: (paidOnly?: boolean) => void;
   generateMatches: (phase: Phase, teamIds: string[]) => void;
   generateEliminationFromStandings: (
     phase: Exclude<Phase, "Classificação">,
@@ -558,9 +558,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.matches]);
 
-  const drawTeams = () => {
+  const drawTeams = (paidOnly?: boolean) => {
     const teams = state.teams;
-    const allPlayers = state.players;
+    const allPlayers = paidOnly ? state.players.filter((p) => p.paid) : state.players;
     if (teams.length === 0) return;
 
     const result: Assignments = Object.fromEntries(
