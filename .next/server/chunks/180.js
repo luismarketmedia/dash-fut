@@ -1,0 +1,1 @@
+"use strict";exports.id=180,exports.ids=[180],exports.modules={87180:(e,s,o)=>{o.r(s),o.d(s,{KeylessCookieSync:()=>t});let t=(0,o(36018).createProxy)(String.raw`D:\Projetos\Solutech\dash-fut\node_modules\.pnpm\@clerk+nextjs@6.32.0_next@1_0f02c25ba18b97323c1c85a91f13e780\node_modules\@clerk\nextjs\dist\esm\app-router\client\keyless-cookie-sync.js#KeylessCookieSync`)}};

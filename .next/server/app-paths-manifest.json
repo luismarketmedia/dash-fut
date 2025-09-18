@@ -1,0 +1,20 @@
+{
+  "/[cat]/fases/page": "app/[cat]/fases/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/demo/route": "app/api/demo/route.js",
+  "/[cat]/jogadores/page": "app/[cat]/jogadores/page.js",
+  "/[cat]/page": "app/[cat]/page.js",
+  "/[cat]/sorteio/page": "app/[cat]/sorteio/page.js",
+  "/[cat]/times/page": "app/[cat]/times/page.js",
+  "/api/workspaces/route": "app/api/workspaces/route.js",
+  "/categorias/page": "app/categorias/page.js",
+  "/jogadores/page": "app/jogadores/page.js",
+  "/jogo/[matchId]/page": "app/jogo/[matchId]/page.js",
+  "/page": "app/page.js",
+  "/sign-in/[[...sign-in]]/page": "app/sign-in/[[...sign-in]]/page.js",
+  "/times/page": "app/times/page.js",
+  "/sorteio/page": "app/sorteio/page.js",
+  "/api/ping/route": "app/api/ping/route.js",
+  "/sign-up/[[...sign-up]]/page": "app/sign-up/[[...sign-up]]/page.js",
+  "/fases/page": "app/fases/page.js"
+}

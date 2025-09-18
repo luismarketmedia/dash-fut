@@ -1,150 +1,136 @@
-import { useApp } from "@/store/app";
 import { useState } from "react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { useApp } from "@/store/app";
 
 export function DrawSection() {
-  const { state, drawTeams, resetDrawAndPhases } = useApp();
-  const { teams, assignments, players } = state;
-  const [paidOnly, setPaidOnly] = useState(false);
+	const { state, drawTeams, resetDrawAndPhases } = useApp();
+	const cat = state.activeCategoryId || state.categories[0]?.id || "";
+	const teams = state.teams.filter((t) => t.categoryId === cat);
+	const players = state.players.filter((p) => p.categoryId === cat);
+	const assignments = state.assignments;
+	const [paidOnly, setPaidOnly] = useState(false);
 
-  const hasAssignments = Object.values(assignments).some(
-    (list) => (list?.length || 0) > 0,
-  );
-  const canReset = hasAssignments || state.matches.length > 0;
+	const hasAssignments = Object.values(assignments).some((list) => (list?.length || 0) > 0);
+	const canReset = hasAssignments || state.matches.length > 0;
 
-  return (
-    <section id="sorteio" className="space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Sorteio de Times</h2>
-          <p className="text-muted-foreground text-sm">
-            Primeiro distribui goleiros, depois equilibra os demais.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="paid-only"
-              checked={paidOnly}
-              onCheckedChange={setPaidOnly}
-            />
-            <Label htmlFor="paid-only" className="text-sm">
-              Apenas pagos
-            </Label>
-          </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={!canReset}>
-                Resetar sorteio
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Resetar sorteio e fases?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Isso vai apagar as fases no banco (confrontos e eventos) e
-                  limpar as distribuições. Times e jogadores serão mantidos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={resetDrawAndPhases}>
-                  Confirmar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button
-            onClick={() => drawTeams(paidOnly)}
-            disabled={teams.length === 0 || players.length === 0}
-          >
-            Sortear
-          </Button>
-        </div>
-      </header>
-      {teams.length === 0 ? (
-        <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
-          Crie times e cadastre jogadores para realizar o sorteio.
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {teams.map((t) => {
-            const ids = assignments[t.id] || [];
-            return (
-              <Card key={t.id} className="overflow-hidden border-0 shadow-sm">
-                <div
-                  className="h-2 w-full"
-                  style={{ backgroundColor: t.color }}
-                />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-lg">{t.name}</CardTitle>
-                  <Badge variant="secondary">
-                    {ids.length}/{t.capacity}
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-72 pr-3">
-                    <ul className="space-y-2">
-                      {ids.map((pid) => {
-                        const p = players.find((pp) => pp.id === pid);
-                        if (!p) return null;
-                        return (
-                          <li
-                            key={pid}
-                            className="flex items-center justify-between rounded-md border p-2 text-sm"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-muted text-xs font-semibold">
-                                {p.jerseyNumber}
-                              </span>
-                              <div>
-                                <div className="font-medium leading-4">
-                                  {p.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {p.position}
-                                </div>
-                              </div>
-                            </div>
-                            {p.paid ? (
-                              <Badge className="bg-emerald-500 hover:bg-emerald-500">
-                                Pago
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">Pendente</Badge>
-                            )}
-                          </li>
-                        );
-                      })}
-                      {ids.length === 0 && (
-                        <li className="text-center text-sm text-muted-foreground">
-                          Sem jogadores atribuídos
-                        </li>
-                      )}
-                    </ul>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
+	return (
+		<section id="sorteio" className="space-y-6">
+			<header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h2 className="text-xl font-semibold">Sorteio de Times</h2>
+					<p className="text-muted-foreground text-sm">
+						Primeiro distribui goleiros, depois equilibra os demais.
+					</p>
+				</div>
+				<div className="flex flex-wrap items-center gap-2">
+					<div className="flex items-center gap-2">
+						<Switch id="paid-only" checked={paidOnly} onCheckedChange={setPaidOnly} />
+						<Label htmlFor="paid-only" className="text-sm">
+							Apenas pagos
+						</Label>
+					</div>
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button variant="outline" disabled={!canReset}>
+								Resetar sorteio
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Resetar sorteio e fases?</AlertDialogTitle>
+								<AlertDialogDescription>
+									Isso vai apagar as fases no banco (confrontos e eventos) e limpar as
+									distribuições. Times e jogadores serão mantidos.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancelar</AlertDialogCancel>
+								<AlertDialogAction onClick={resetDrawAndPhases}>Confirmar</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+					<Button
+						onClick={() => drawTeams(paidOnly)}
+						disabled={teams.length === 0 || players.length === 0}
+					>
+						Sortear
+					</Button>
+				</div>
+			</header>
+			{teams.length === 0 ? (
+				<div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+					Crie times e cadastre jogadores para realizar o sorteio.
+				</div>
+			) : (
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{teams.map((t) => {
+						const ids = assignments[t.id] || [];
+						return (
+							<Card key={t.id} className="overflow-hidden border-0 shadow-sm">
+								<div className="h-2 w-full" style={{ backgroundColor: t.color }} />
+								<CardHeader className="flex flex-row items-center justify-between space-y-0">
+									<CardTitle className="text-lg">{t.name}</CardTitle>
+									<Badge variant="secondary">
+										{ids.length}/{t.capacity}
+									</Badge>
+								</CardHeader>
+								<CardContent>
+									<ScrollArea className="h-auto pr-3">
+										<ul className="space-y-2">
+											{ids.map((pid) => {
+												const p = players.find((pp) => pp.id === pid);
+												if (!p) return null;
+												return (
+													<li
+														key={pid}
+														className="flex items-center justify-between rounded-md border p-2 text-sm"
+													>
+														<div className="flex items-center gap-2">
+															<span className="inline-flex h-6 w-6 items-center justify-center rounded bg-muted text-xs font-semibold">
+																{p.jerseyNumber}
+															</span>
+															<div>
+																<div className="font-medium leading-4">{p.name}</div>
+																<div className="text-xs text-muted-foreground">{p.position}</div>
+															</div>
+														</div>
+														{p.paid ? (
+															<Badge className="bg-emerald-500 hover:bg-emerald-500">Pago</Badge>
+														) : (
+															<Badge variant="outline">Pendente</Badge>
+														)}
+													</li>
+												);
+											})}
+											{ids.length === 0 && (
+												<li className="text-center text-sm text-muted-foreground">
+													Sem jogadores atribuídos
+												</li>
+											)}
+										</ul>
+									</ScrollArea>
+								</CardContent>
+							</Card>
+						);
+					})}
+				</div>
+			)}
+		</section>
+	);
 }

@@ -6,104 +6,104 @@
 @tailwind utilities;
 
 @layer base {
-  /**
-   * Tailwind CSS theme
-   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
-   * A different format will require also updating the theme in tailwind.config.ts.
-  */
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+	/**
+	 * Tailwind CSS theme
+	 * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+	 * A different format will require also updating the theme in tailwind.config.ts.
+	 */
+	:root {
+		--background: 0 0% 100%;
+		--foreground: 222.2 84% 4.9%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+		--card: 0 0% 100%;
+		--card-foreground: 222.2 84% 4.9%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 22.5 91.23% 55.29%;
-    --primary-foreground: 0 0% 100%;
+		--primary: 22.5 91.23% 55.29%;
+		--primary-foreground: 0 0% 100%;
 
-    --secondary: 210 30% 96%;
-    --secondary-foreground: 222 47% 11%;
+		--secondary: 210 30% 96%;
+		--secondary-foreground: 222 47% 11%;
 
-    --muted: 210 30% 96%;
-    --muted-foreground: 215 16% 47%;
+		--muted: 210 30% 96%;
+		--muted-foreground: 215 16% 47%;
 
-    --accent: 4.19 78.13% 19.01%;
-    --accent-foreground: 0 0% 100%;
+		--accent: 4.19 78.13% 19.01%;
+		--accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 0 0% 100%;
+		--destructive: 0 72% 50%;
+		--destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 92%;
-    --input: 214 32% 92%;
-    --ring: 22.5 91.23% 55.29%;
+		--border: 214 32% 92%;
+		--input: 214 32% 92%;
+		--ring: 22.5 91.23% 55.29%;
 
-    --radius: 0.5rem;
+		--radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+		--sidebar-background: 0 0% 98%;
 
-    --sidebar-foreground: 150 20% 20%;
+		--sidebar-foreground: 150 20% 20%;
 
-    --sidebar-primary: 22.5 91.23% 55.29%;
+		--sidebar-primary: 22.5 91.23% 55.29%;
 
-    --sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-primary-foreground: 0 0% 100%;
 
-    --sidebar-accent: 150 35% 92%;
+		--sidebar-accent: 150 35% 92%;
 
-    --sidebar-accent-foreground: 150 30% 20%;
+		--sidebar-accent-foreground: 150 30% 20%;
 
-    --sidebar-border: 150 20% 90%;
+		--sidebar-border: 150 20% 90%;
 
-    --sidebar-ring: 22.5 91.23% 55.29%;
-  }
+		--sidebar-ring: 22.5 91.23% 55.29%;
+	}
 
-  .dark {
-    --background: 150 10% 6%;
-    --foreground: 0 0% 100%;
+	.dark {
+		--background: 150 10% 6%;
+		--foreground: 0 0% 100%;
 
-    --card: 150 8% 8%;
-    --card-foreground: 0 0% 100%;
+		--card: 150 8% 8%;
+		--card-foreground: 0 0% 100%;
 
-    --popover: 150 8% 8%;
-    --popover-foreground: 0 0% 100%;
+		--popover: 150 8% 8%;
+		--popover-foreground: 0 0% 100%;
 
-    --primary: 22.5 91.23% 55.29%;
-    --primary-foreground: 0 0% 0%;
+		--primary: 22.5 91.23% 55.29%;
+		--primary-foreground: 0 0% 0%;
 
-    --secondary: 150 10% 20%;
-    --secondary-foreground: 0 0% 100%;
+		--secondary: 150 10% 20%;
+		--secondary-foreground: 0 0% 100%;
 
-    --muted: 150 10% 20%;
-    --muted-foreground: 150 10% 70%;
+		--muted: 150 10% 20%;
+		--muted-foreground: 150 10% 70%;
 
-    --accent: 4.19 78.13% 19.01%;
-    --accent-foreground: 0 0% 100%;
+		--accent: 4.19 78.13% 19.01%;
+		--accent-foreground: 0 0% 100%;
 
-    --destructive: 0 60% 40%;
-    --destructive-foreground: 0 0% 100%;
+		--destructive: 0 60% 40%;
+		--destructive-foreground: 0 0% 100%;
 
-    --border: 150 10% 20%;
-    --input: 150 10% 20%;
-    --ring: 22.5 91.23% 55.29%;
-    --sidebar-background: 150 10% 10%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 22.5 91.23% 55.29%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 150 8% 16%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 150 8% 16%;
-    --sidebar-ring: 22.5 91.23% 55.29%;
-  }
+		--border: 150 10% 20%;
+		--input: 150 10% 20%;
+		--ring: 22.5 91.23% 55.29%;
+		--sidebar-background: 150 10% 10%;
+		--sidebar-foreground: 0 0% 100%;
+		--sidebar-primary: 22.5 91.23% 55.29%;
+		--sidebar-primary-foreground: 0 0% 0%;
+		--sidebar-accent: 150 8% 16%;
+		--sidebar-accent-foreground: 0 0% 100%;
+		--sidebar-border: 150 8% 16%;
+		--sidebar-ring: 22.5 91.23% 55.29%;
+	}
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+	* {
+		@apply border-border;
+	}
 
-  body {
-    @apply bg-background text-foreground overflow-x-hidden;
-  }
+	body {
+		@apply bg-background text-foreground overflow-x-hidden;
+	}
 }

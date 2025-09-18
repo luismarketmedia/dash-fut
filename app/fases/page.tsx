@@ -4,10 +4,10 @@ import { PhasesSection } from "@/components/dashboard/Phases";
 import { TopScorersSection } from "@/components/dashboard/TopScorers";
 
 export default function FasesPage() {
-  return (
-    <DashboardLayout>
-      <PhasesSection />
-      <TopScorersSection />
-    </DashboardLayout>
-  );
+	return (
+		<DashboardLayout>
+			<PhasesSection />
+			<TopScorersSection />
+		</DashboardLayout>
+	);
 }

@@ -16,9 +16,13 @@
     "start": "next start -p 8080",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "biome:check": "biome check --reporter=summary app client shared",
+    "biome:fix": "biome check --write app client shared",
+    "biome:fix:unsafe": "biome check --write --unsafe app client shared"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.32.0",
     "@supabase/supabase-js": "^2.57.4",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -26,6 +30,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

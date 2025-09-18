@@ -1,11 +1,11 @@
 "use client";
-import { DashboardLayout } from "@/components/dashboard/Layout";
 import { DrawSection } from "@/components/dashboard/Draw";
+import { DashboardLayout } from "@/components/dashboard/Layout";
 
 export default function SorteioPage() {
-  return (
-    <DashboardLayout>
-      <DrawSection />
-    </DashboardLayout>
-  );
+	return (
+		<DashboardLayout>
+			<DrawSection />
+		</DashboardLayout>
+	);
 }
